@@ -19,28 +19,45 @@
 			document.body.appendChild( renderer.domElement );
             
             // Objects in scene
-            var geometry = new THREE.PlaneBufferGeometry( 3, 3, 10, 10 );
+            const WIDTHVERTICES = 5;
+            const HEIGHTVERTICES = 2;
+            var geometry = new THREE.PlaneBufferGeometry( 3, 3, WIDTHVERTICES, HEIGHTVERTICES );
             var planeVertices = geometry.getAttribute('position');
-            
-            // Vertices in planes position
-            let displ = 0;
+            geometry.userData.oldPosition = planeVertices;
             
             
             var material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide, wireframe: true} );
             var plane = new THREE.Mesh( geometry, material );
             scene.add( plane );
+            
 
-			
+			//console.log(geometry.userData.oldPosition.array);
+            //console.log(planeVertices.array);
+            
+            const gravity = 9.8;
+            const mass = 1;
+            const springKoefficient = 1;
+            let timestep = 1/30;
+            
+            
             // Render-loop
 			var animate = function () {
 				requestAnimationFrame( animate );
                 
                 // Updating vertices position
                 geometry.attributes.position.needsUpdate = true;
-                displ += 0.001;
-                /*for (let i = 0; i < planeVertices.count; i += 2) {*/
-                planeVertices.setXYZ(11, displ, displ, displ);
-            //}
+                for (let i = 0; i < planeVertices.count; i += 1) {
+                    
+                    if(!(i === 0 || i === WIDTHVERTICES)) //Suspended corners
+                    {
+                        //geometry.userData.oldPosition.array = planeVertices.array;
+                        let newPosY = 2*planeVertices.getY(i)-geometry.userData.oldPosition.getY(i)-timestep*timestep*gravity;
+                        geometry.userData.oldPosition.setY(i, planeVertices.getY(i));
+                        planeVertices.setY(i, newPosY);
+                        //console.log('oldPos: ' + geometry.userData.oldPosition.array);
+                        //console.log('newPos: ' + planeVertices.array);
+                    }
+                }
                 
 				//plane.rotation.x += 0.01;
 				//plane.rotation.y += 0.01;
