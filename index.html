@@ -35,10 +35,8 @@
             
             const gravity = 9.8;
             const mass = 0.01;
-            const springConstant = 1;
+            const springConstant = 0.2;
             let timestep = 1/30;
-            
-            
             
             
             // Render-loop
@@ -84,6 +82,38 @@
                             springForceZ += springConstant*(planeVertices.getZ(i+1)-planeVertices.getZ(i));
                             
                         }
+                        
+                        //Shear springs
+                        if(i > WIDTHVERTICES && i%(WIDTHVERTICES+1) !== 0) //if not first row and not first column
+                        {
+                            springForceX += springConstant*(planeVertices.getX(i-WIDTHVERTICES-2)-planeVertices.getX(i));
+                            springForceY += springConstant*(planeVertices.getY(i-WIDTHVERTICES-2)-planeVertices.getY(i));
+                            springForceZ += springConstant*(planeVertices.getZ(i-WIDTHVERTICES-2)-planeVertices.getZ(i));
+                            
+                        }
+                        if(i > WIDTHVERTICES && (i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0) //if not first row and not last column
+                        {
+                            springForceX += springConstant*(planeVertices.getX(i-WIDTHVERTICES)-planeVertices.getX(i));
+                            springForceY += springConstant*(planeVertices.getY(i-WIDTHVERTICES)-planeVertices.getY(i));
+                            springForceZ += springConstant*(planeVertices.getZ(i-WIDTHVERTICES)-planeVertices.getZ(i));
+                            
+                        }
+                        if(i < (WIDTHVERTICES+1)*HEIGHTVERTICES && i%(WIDTHVERTICES+1) !== 0) //if not last row and not first column
+                        {
+                            springForceX += springConstant*(planeVertices.getX(i+WIDTHVERTICES)-planeVertices.getX(i));
+                            springForceY += springConstant*(planeVertices.getY(i+WIDTHVERTICES)-planeVertices.getY(i));
+                            springForceZ += springConstant*(planeVertices.getZ(i+WIDTHVERTICES)-planeVertices.getZ(i));
+                            
+                        }
+                        if(i < (WIDTHVERTICES+1)*HEIGHTVERTICES && (i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0) //if not last row and not last column
+                        {
+                            springForceX += springConstant*(planeVertices.getX(i+WIDTHVERTICES+2)-planeVertices.getX(i));
+                            springForceY += springConstant*(planeVertices.getY(i+WIDTHVERTICES+2)-planeVertices.getY(i));
+                            springForceZ += springConstant*(planeVertices.getZ(i+WIDTHVERTICES+2)-planeVertices.getZ(i));
+                            
+                        }
+
+                        
                         
                         //Update old position
                         geometry.userData.oldPosition.array = planeVertices.array; //For xyz at the same time
