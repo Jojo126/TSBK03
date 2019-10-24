@@ -34,10 +34,13 @@
             //console.log(planeVertices.array);
             
             const gravity = 9.8;
-            const mass = 1;
+            const mass = 0.4;
             const springConstant = 300;
             let timestep = 1/30;
+            let springForceX = 0;
             let springForceY = 0;
+            let springForceZ = 0;
+            
             
             
             // Render-loop
@@ -50,17 +53,26 @@
                     
                     if(!(i === 0 || i === WIDTHVERTICES)) //Suspended corners
                     {
+                        //Structural springs
                         if( i > WIDTHVERTICES && i < (WIDTHVERTICES+1)*HEIGHTVERTICES)
                         {
-                            
+                            springForceX = springConstant*(planeVertices.getX(i-WIDTHVERTICES-1)-planeVertices.getX(i)+planeVertices.getX(i+WIDTHVERTICES+1)-planeVertices.getX(i));
                             springForceY = springConstant*(planeVertices.getY(i-WIDTHVERTICES-1)-planeVertices.getY(i)+planeVertices.getY(i+WIDTHVERTICES+1)-planeVertices.getY(i));
+                            springForceZ = springConstant*(planeVertices.getZ(i-WIDTHVERTICES-1)-planeVertices.getZ(i)+planeVertices.getZ(i+WIDTHVERTICES+1)-planeVertices.getZ(i));
                             
                         }
+                        let newPosX = 2*planeVertices.getX(i) - geometry.userData.oldPosition.getX(i) - Math.pow(timestep,2)*(-springForceX)/mass;
+                        planeVertices.setX(i, newPosX);
                         let newPosY = 2*planeVertices.getY(i) - geometry.userData.oldPosition.getY(i) - Math.pow(timestep,2)*(gravity-springForceY)/mass;
                         planeVertices.setY(i, newPosY);
-                        //geometry.userData.oldPosition.array = planeVertices.array;
+                        let newPosZ = 2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*(-springForceZ)/mass;
+                        planeVertices.setZ(i, newPosZ);
                         
-                        geometry.userData.oldPosition.setY(i, planeVertices.getY(i));
+                        //geometry.userData.oldPosition.setY(i, planeVertices.getY(i));
+                        
+                        geometry.userData.oldPosition.array = planeVertices.array; //For xyz at the same time
+                        
+                        
                         
                         //console.log('oldPos: ' + geometry.userData.oldPosition.array);
                         //console.log('newPos: ' + planeVertices.array);
