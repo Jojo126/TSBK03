@@ -19,8 +19,8 @@
 			document.body.appendChild( renderer.domElement );
             
             // Objects in scene
-            const WIDTHVERTICES = 7;
-            const HEIGHTVERTICES = 9;
+            const WIDTHVERTICES = 10;
+            const HEIGHTVERTICES = 15;
             var geometry = new THREE.PlaneBufferGeometry( 3, 3, WIDTHVERTICES, HEIGHTVERTICES );
             var planeVertices = geometry.getAttribute('position');
             geometry.userData.oldPosition = planeVertices;
@@ -30,14 +30,14 @@
             var plane = new THREE.Mesh( geometry, material );
             scene.add( plane );
             
-			//console.log(geometry.userData.oldPosition.array);
-            //console.log(planeVertices.array);
-            
             const gravity = 9.8;
-            const mass = 0.002;
-            const springConstant = 0.2;
+            const mass = 0.1;
+            const springConstant = 30;
+            const springLength = 0.4;
             let timestep = 1/30;
-            
+            let springForce = new THREE.Vector3(0,0,0);
+            let tempVec = new THREE.Vector3(0,0,0);
+            let tempVec2 = new THREE.Vector3(0,0,0);
             
             // Render-loop
 			var animate = function () {
@@ -46,103 +46,127 @@
                 // Updating vertices position
                 geometry.attributes.position.needsUpdate = true;
                 for (let i = 0; i < planeVertices.count; i += 1) {
+                    springForce.set(0,0,0);
+                    tempVec.set(0,0,0);
+                    tempVec2.set(0,0,0);
                     
-                    let springForceX = 0;
-                    let springForceY = 0;
-                    let springForceZ = 0;
+                    function calcSpringForce(tempVec, tempVec2) {
+                        springForce.add(tempVec2.sub(tempVec.normalize().multiplyScalar(springLength)).multiplyScalar(-springConstant));
+                    }
                     
                     if(!(i === 0 || i === WIDTHVERTICES)) //Suspended corners
                     {
                         //Structural springs
                         if(i > WIDTHVERTICES) //if not first row
                         {
-                            springForceX += springConstant*(planeVertices.getX(i-WIDTHVERTICES-1)-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i-WIDTHVERTICES-1)-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i-WIDTHVERTICES-1)-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i-WIDTHVERTICES-1)-planeVertices.getX(i),
+                                        planeVertices.getY(i-WIDTHVERTICES-1)-planeVertices.getY(i),
+                                        planeVertices.getZ(i-WIDTHVERTICES-1)-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
+                            
                         }
                         if(i < (WIDTHVERTICES+1)*HEIGHTVERTICES) //if not last row
                         {
-                            springForceX += springConstant*(planeVertices.getX(i+WIDTHVERTICES+1)-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i+WIDTHVERTICES+1)-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i+WIDTHVERTICES+1)-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i+WIDTHVERTICES+1)-planeVertices.getX(i),
+                                        planeVertices.getY(i+WIDTHVERTICES+1)-planeVertices.getY(i),
+                                        planeVertices.getZ(i+WIDTHVERTICES+1)-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
                         }
                         if(i%(WIDTHVERTICES+1) !== 0) //if not first column
                         {
-                            springForceX += springConstant*(planeVertices.getX(i-1)-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i-1)-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i-1)-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i-1)-planeVertices.getX(i),
+                                        planeVertices.getY(i-1)-planeVertices.getY(i),
+                                        planeVertices.getZ(i-1)-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
                         }
                         if((i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0) //if not last column
                         {
-                            springForceX += springConstant*(planeVertices.getX(i+1)-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i+1)-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i+1)-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i+1)-planeVertices.getX(i),
+                                        planeVertices.getY(i+1)-planeVertices.getY(i),
+                                        planeVertices.getZ(i+1)-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
                         }
                         
                         //Shear springs
                         if(i > WIDTHVERTICES && i%(WIDTHVERTICES+1) !== 0) //if not first row and not first column
                         {
-                            springForceX += springConstant*(planeVertices.getX(i-WIDTHVERTICES-2)-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i-WIDTHVERTICES-2)-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i-WIDTHVERTICES-2)-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i-WIDTHVERTICES-2)-planeVertices.getX(i),
+                                        planeVertices.getY(i-WIDTHVERTICES-2)-planeVertices.getY(i),
+                                        planeVertices.getZ(i-WIDTHVERTICES-2)-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
                         }
                         if(i > WIDTHVERTICES && (i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0) //if not first row and not last column
                         {
-                            springForceX += springConstant*(planeVertices.getX(i-WIDTHVERTICES)-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i-WIDTHVERTICES)-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i-WIDTHVERTICES)-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i-WIDTHVERTICES)-planeVertices.getX(i),
+                                        planeVertices.getY(i-WIDTHVERTICES)-planeVertices.getY(i),
+                                        planeVertices.getZ(i-WIDTHVERTICES)-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
                         }
                         if(i < (WIDTHVERTICES+1)*HEIGHTVERTICES && i%(WIDTHVERTICES+1) !== 0) //if not last row and not first column
                         {
-                            springForceX += springConstant*(planeVertices.getX(i+WIDTHVERTICES)-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i+WIDTHVERTICES)-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i+WIDTHVERTICES)-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i+WIDTHVERTICES)-planeVertices.getX(i),
+                                        planeVertices.getY(i+WIDTHVERTICES)-planeVertices.getY(i),
+                                        planeVertices.getZ(i+WIDTHVERTICES)-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
                         }
                         if(i < (WIDTHVERTICES+1)*HEIGHTVERTICES && (i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0) //if not last row and not last column
                         {
-                            springForceX += springConstant*(planeVertices.getX(i+WIDTHVERTICES+2)-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i+WIDTHVERTICES+2)-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i+WIDTHVERTICES+2)-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i+WIDTHVERTICES+2)-planeVertices.getX(i),
+                                        planeVertices.getY(i+WIDTHVERTICES+2)-planeVertices.getY(i),
+                                        planeVertices.getZ(i+WIDTHVERTICES+2)-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
                         }
                         
                         //Bending springs
                         if(i > 2*WIDTHVERTICES+1) //if not first or second row
                         {
-                            springForceX += springConstant*(planeVertices.getX(i-2*(WIDTHVERTICES+1))-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i-2*(WIDTHVERTICES+1))-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i-2*(WIDTHVERTICES+1))-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i-2*(WIDTHVERTICES+1))-planeVertices.getX(i),
+                                        planeVertices.getY(i-2*(WIDTHVERTICES+1))-planeVertices.getY(i),
+                                        planeVertices.getZ(i-2*(WIDTHVERTICES+1))-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
                         }
                         if(i < (WIDTHVERTICES+1)*(HEIGHTVERTICES-1)) //if not second last or last row
                         {
-                            springForceX += springConstant*(planeVertices.getX(i+2*(WIDTHVERTICES+1))-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i+2*(WIDTHVERTICES+1))-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i+2*(WIDTHVERTICES+1))-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i+2*(WIDTHVERTICES+1))-planeVertices.getX(i),
+                                        planeVertices.getY(i+2*(WIDTHVERTICES+1))-planeVertices.getY(i),
+                                        planeVertices.getZ(i+2*(WIDTHVERTICES+1))-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
                         }
                         if(i%(WIDTHVERTICES+1) !== 0 && (i-1)%(WIDTHVERTICES+1) !== 0) //if not first or second column
                         {
-                            springForceX += springConstant*(planeVertices.getX(i-2)-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i-2)-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i-2)-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i-2)-planeVertices.getX(i),
+                                        planeVertices.getY(i-2)-planeVertices.getY(i),
+                                        planeVertices.getZ(i-2)-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
                         }
                         if((i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0 && (i-WIDTHVERTICES+1)%(WIDTHVERTICES+1) !== 0) //if not second last or last column
                         {
-                            springForceX += springConstant*(planeVertices.getX(i+2)-planeVertices.getX(i));
-                            springForceY += springConstant*(planeVertices.getY(i+2)-planeVertices.getY(i));
-                            springForceZ += springConstant*(planeVertices.getZ(i+2)-planeVertices.getZ(i));
+                            tempVec.set(planeVertices.getX(i+2)-planeVertices.getX(i),
+                                        planeVertices.getY(i+2)-planeVertices.getY(i),
+                                        planeVertices.getZ(i+2)-planeVertices.getZ(i));
+                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
+                            calcSpringForce(tempVec, tempVec2);
                         }
                         
                         
-                        
                         //Update old position
-                        geometry.userData.oldPosition.array = planeVertices.array; //For xyz at the same time
-                        
-                        //Update new position
-                        let newPosX = 2*planeVertices.getX(i) - geometry.userData.oldPosition.getX(i) - Math.pow(timestep,2)*(-springForceX)/mass;
-                        planeVertices.setX(i, newPosX);
-                        let newPosY = 2*planeVertices.getY(i) - geometry.userData.oldPosition.getY(i) - Math.pow(timestep,2)*(gravity*mass-springForceY)/mass;
-                        planeVertices.setY(i, newPosY);
-                        let newPosZ = 2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*(-springForceZ)/mass;
-                        planeVertices.setZ(i, newPosZ);
+                        geometry.userData.oldPosition.setXYZ(planeVertices.getX(), planeVertices.getY(), planeVertices.getZ()); //For xyz at the same time
+                        planeVertices.setXYZ(i, 
+                                             2*planeVertices.getX(i) - geometry.userData.oldPosition.getX(i) - Math.pow(timestep,2)*(springForce.getComponent(0))/mass,
+                                             2*planeVertices.getY(i) - geometry.userData.oldPosition.getY(i) - Math.pow(timestep,2)*(gravity*mass+springForce.getComponent(1))/mass,
+                                             2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*(springForce.getComponent(2))/mass
+                                            );
                     }
                 }
                 
