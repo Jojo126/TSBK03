@@ -32,14 +32,14 @@
             let plane = new THREE.Mesh( geometry, material );
             scene.add( plane );
             
-            const gravity = 9.8;
-            const mass = 0.01;
-            const springConstant = 10;
-            const springLength = 0.5;
-            let timestep = 1/60;
-            let springForce = new THREE.Vector3(0,0,0);
-            let tempVec = new THREE.Vector3(0,0,0);
-            let tempVec2 = new THREE.Vector3(0,0,0);
+            const gravity = 9.8; // m/s^2
+            const mass = 0.01; // kg
+            const springConstant = 10; // N/m
+            const springLength = 0.5; // m
+            let timestep = 1/60; // s/frame
+            let springForce = new THREE.Vector3(0,0,0); // N
+            let tempVec = new THREE.Vector3(0,0,0); // m
+            let tempVec2 = new THREE.Vector3(0,0,0); // m
             
             // Render-loop
 			const animate = function () {
