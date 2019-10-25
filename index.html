@@ -20,7 +20,7 @@
             
             // Objects in scene
             const WIDTHVERTICES = 30;
-            const HEIGHTVERTICES = 20;
+            const HEIGHTVERTICES = 30;
             const CLOTHWIDTH = 5;
             const CLOTHHEIGHT = 5;
             let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHVERTICES, HEIGHTVERTICES );
@@ -37,13 +37,14 @@
             const structuralSpringConstant = 1; // N/m
             const shearSpringConstant = 1; // N/m
             const bendSpringConstant = 1; // N/m
-            const structuralSpringLength = CLOTHWIDTH/(WIDTHVERTICES+1); // m
+            const structuralSpringLength = CLOTHWIDTH/(WIDTHVERTICES); // m
             const bendSpringLength = 2 * structuralSpringLength; // m
-            const shearSpringLength = Math.sqrt(Math.pow(structuralSpringLength,2)+Math.pow(bendSpringLength,2)); // m
+            const shearSpringLength = Math.sqrt(2*Math.pow(structuralSpringLength,2)); // m
             let timestep = 1/60; // s/frame
             let springForce = new THREE.Vector3(0,0,0); // N
             let tempVec = new THREE.Vector3(0,0,0); // m
             let tempVec2 = new THREE.Vector3(0,0,0); // m
+            let time = 0;
             
             // Render-loop
 			const animate = function () {
@@ -127,7 +128,8 @@
                         planeVertices.setXYZ(i, 
                                              2*planeVertices.getX(i) - geometry.userData.oldPosition.getX(i) - Math.pow(timestep,2)*(springForce.getComponent(0))/mass,
                                              2*planeVertices.getY(i) - geometry.userData.oldPosition.getY(i) - Math.pow(timestep,2)*(gravity*mass+springForce.getComponent(1))/mass,
-                                             2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*(springForce.getComponent(2))/mass);
+                                             2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*(springForce.getComponent(2)+0.1*Math.sin(time/500))/mass);
+                        time += timestep;
                     }
                 }
                 
