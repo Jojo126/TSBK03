@@ -10,47 +10,51 @@
 		<script src="js/three.js"></script>
 		<script>
             
-			var scene = new THREE.Scene();
-			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+			const scene = new THREE.Scene();
+			let camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
             camera.position.z = 5;
 
-			var renderer = new THREE.WebGLRenderer();
+			const renderer = new THREE.WebGLRenderer();
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			document.body.appendChild( renderer.domElement );
             
             // Objects in scene
-            const WIDTHVERTICES = 10;
+            const WIDTHVERTICES = 15;
             const HEIGHTVERTICES = 15;
-            var geometry = new THREE.PlaneBufferGeometry( 3, 3, WIDTHVERTICES, HEIGHTVERTICES );
-            var planeVertices = geometry.getAttribute('position');
+            const CLOTHWIDTH = 5;
+            const CLOTHHEIGHT = 5;
+            let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHVERTICES, HEIGHTVERTICES );
+            let planeVertices = geometry.getAttribute('position');
             geometry.userData.oldPosition = planeVertices;
             
             
-            var material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide, wireframe: true} );
-            var plane = new THREE.Mesh( geometry, material );
+            let material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide, wireframe: true} );
+            let plane = new THREE.Mesh( geometry, material );
             scene.add( plane );
             
             const gravity = 9.8;
-            const mass = 0.1;
-            const springConstant = 30;
-            const springLength = 0.4;
-            let timestep = 1/30;
+            const mass = 0.01;
+            const springConstant = 10;
+            const springLength = 0.5;
+            let timestep = 1/60;
             let springForce = new THREE.Vector3(0,0,0);
             let tempVec = new THREE.Vector3(0,0,0);
             let tempVec2 = new THREE.Vector3(0,0,0);
             
             // Render-loop
-			var animate = function () {
+			const animate = function () {
 				requestAnimationFrame( animate );
                 
                 // Updating vertices position
                 geometry.attributes.position.needsUpdate = true;
-                for (let i = 0; i < planeVertices.count; i += 1) {
+                for (let i = 0; i < planeVertices.count; i += 1) 
+                {    
                     springForce.set(0,0,0);
                     tempVec.set(0,0,0);
                     tempVec2.set(0,0,0);
                     
-                    function calcSpringForce(tempVec, tempVec2) {
+                    function calcSpringForce(tempVec) {
+                        tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
                         springForce.add(tempVec2.sub(tempVec.normalize().multiplyScalar(springLength)).multiplyScalar(-springConstant));
                     }
                     
@@ -62,33 +66,28 @@
                             tempVec.set(planeVertices.getX(i-WIDTHVERTICES-1)-planeVertices.getX(i),
                                         planeVertices.getY(i-WIDTHVERTICES-1)-planeVertices.getY(i),
                                         planeVertices.getZ(i-WIDTHVERTICES-1)-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
-                            
+                            calcSpringForce(tempVec);
                         }
                         if(i < (WIDTHVERTICES+1)*HEIGHTVERTICES) //if not last row
                         {
                             tempVec.set(planeVertices.getX(i+WIDTHVERTICES+1)-planeVertices.getX(i),
                                         planeVertices.getY(i+WIDTHVERTICES+1)-planeVertices.getY(i),
                                         planeVertices.getZ(i+WIDTHVERTICES+1)-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
+                            calcSpringForce(tempVec);
                         }
                         if(i%(WIDTHVERTICES+1) !== 0) //if not first column
                         {
                             tempVec.set(planeVertices.getX(i-1)-planeVertices.getX(i),
                                         planeVertices.getY(i-1)-planeVertices.getY(i),
                                         planeVertices.getZ(i-1)-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
+                            calcSpringForce(tempVec);
                         }
                         if((i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0) //if not last column
                         {
                             tempVec.set(planeVertices.getX(i+1)-planeVertices.getX(i),
                                         planeVertices.getY(i+1)-planeVertices.getY(i),
                                         planeVertices.getZ(i+1)-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
+                            calcSpringForce(tempVec);
                         }
                         
                         //Shear springs
@@ -97,32 +96,28 @@
                             tempVec.set(planeVertices.getX(i-WIDTHVERTICES-2)-planeVertices.getX(i),
                                         planeVertices.getY(i-WIDTHVERTICES-2)-planeVertices.getY(i),
                                         planeVertices.getZ(i-WIDTHVERTICES-2)-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
+                            calcSpringForce(tempVec);
                         }
                         if(i > WIDTHVERTICES && (i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0) //if not first row and not last column
                         {
                             tempVec.set(planeVertices.getX(i-WIDTHVERTICES)-planeVertices.getX(i),
                                         planeVertices.getY(i-WIDTHVERTICES)-planeVertices.getY(i),
                                         planeVertices.getZ(i-WIDTHVERTICES)-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
+                            calcSpringForce(tempVec);
                         }
                         if(i < (WIDTHVERTICES+1)*HEIGHTVERTICES && i%(WIDTHVERTICES+1) !== 0) //if not last row and not first column
                         {
                             tempVec.set(planeVertices.getX(i+WIDTHVERTICES)-planeVertices.getX(i),
                                         planeVertices.getY(i+WIDTHVERTICES)-planeVertices.getY(i),
                                         planeVertices.getZ(i+WIDTHVERTICES)-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
+                            calcSpringForce(tempVec);
                         }
                         if(i < (WIDTHVERTICES+1)*HEIGHTVERTICES && (i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0) //if not last row and not last column
                         {
                             tempVec.set(planeVertices.getX(i+WIDTHVERTICES+2)-planeVertices.getX(i),
                                         planeVertices.getY(i+WIDTHVERTICES+2)-planeVertices.getY(i),
                                         planeVertices.getZ(i+WIDTHVERTICES+2)-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
+                            calcSpringForce(tempVec);
                         }
                         
                         //Bending springs
@@ -131,32 +126,28 @@
                             tempVec.set(planeVertices.getX(i-2*(WIDTHVERTICES+1))-planeVertices.getX(i),
                                         planeVertices.getY(i-2*(WIDTHVERTICES+1))-planeVertices.getY(i),
                                         planeVertices.getZ(i-2*(WIDTHVERTICES+1))-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
+                            calcSpringForce(tempVec);
                         }
                         if(i < (WIDTHVERTICES+1)*(HEIGHTVERTICES-1)) //if not second last or last row
                         {
                             tempVec.set(planeVertices.getX(i+2*(WIDTHVERTICES+1))-planeVertices.getX(i),
                                         planeVertices.getY(i+2*(WIDTHVERTICES+1))-planeVertices.getY(i),
                                         planeVertices.getZ(i+2*(WIDTHVERTICES+1))-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
+                            calcSpringForce(tempVec);
                         }
                         if(i%(WIDTHVERTICES+1) !== 0 && (i-1)%(WIDTHVERTICES+1) !== 0) //if not first or second column
                         {
                             tempVec.set(planeVertices.getX(i-2)-planeVertices.getX(i),
                                         planeVertices.getY(i-2)-planeVertices.getY(i),
                                         planeVertices.getZ(i-2)-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
+                            calcSpringForce(tempVec);
                         }
                         if((i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0 && (i-WIDTHVERTICES+1)%(WIDTHVERTICES+1) !== 0) //if not second last or last column
                         {
                             tempVec.set(planeVertices.getX(i+2)-planeVertices.getX(i),
                                         planeVertices.getY(i+2)-planeVertices.getY(i),
                                         planeVertices.getZ(i+2)-planeVertices.getZ(i));
-                            tempVec2.set(tempVec.x,tempVec.y,tempVec.z);
-                            calcSpringForce(tempVec, tempVec2);
+                            calcSpringForce(tempVec);
                         }
                         
                         
