@@ -27,19 +27,28 @@
             let planeVertices = geometry.getAttribute('position');
             geometry.userData.oldPosition = planeVertices;
             
-            
-            let material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide, wireframe: true} );
+            let directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+            directionalLight.position.set( 0, 0, 10 );
+            scene.add( directionalLight );
+            let directionalLight2 = new THREE.DirectionalLight( 0xffffff, 1 );
+            directionalLight2.position.set( 0, 0, -10 );
+            scene.add( directionalLight2 );
+            /*
+            let light = new THREE.PointLight( 0xffffff, 1, 100 );
+            light.position.set( -10, -10, -10 );
+            scene.add( light );*/
+            let material = new THREE.MeshLambertMaterial( {color: 0xffff00, side: THREE.DoubleSide, wireframe: false} );
             let plane = new THREE.Mesh( geometry, material );
             scene.add( plane );
             
             const gravity = 9.8; // m/s^2
             const mass = 0.001; // kg
-            const structuralSpringConstant = 1; // N/m
-            const shearSpringConstant = 1; // N/m
-            const bendSpringConstant = 1; // N/m
-            const structuralSpringLength = CLOTHWIDTH/(WIDTHVERTICES); // m
+            const structuralSpringLength = CLOTHWIDTH/WIDTHVERTICES; // m
             const bendSpringLength = 2 * structuralSpringLength; // m
-            const shearSpringLength = Math.sqrt(2*Math.pow(structuralSpringLength,2)); // m
+            const shearSpringLength = Math.sqrt(2 * Math.pow(structuralSpringLength, 2)); // m
+            const structuralSpringConstant = 0.2/structuralSpringLength; // N/m
+            const shearSpringConstant = 0.2/shearSpringLength; // N/m
+            const bendSpringConstant = 0.2/bendSpringLength; // N/m
             let timestep = 1/60; // s/frame
             let springForce = new THREE.Vector3(0,0,0); // N
             let tempVec = new THREE.Vector3(0,0,0); // m
@@ -128,7 +137,7 @@
                         planeVertices.setXYZ(i, 
                                              2*planeVertices.getX(i) - geometry.userData.oldPosition.getX(i) - Math.pow(timestep,2)*(springForce.getComponent(0))/mass,
                                              2*planeVertices.getY(i) - geometry.userData.oldPosition.getY(i) - Math.pow(timestep,2)*(gravity*mass+springForce.getComponent(1))/mass,
-                                             2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*(springForce.getComponent(2)+0.1*Math.sin(time/500))/mass);
+                                             2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*(springForce.getComponent(2)+0.1*Math.cos(time/450))/mass);
                         time += timestep;
                     }
                 }
