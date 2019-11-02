@@ -17,12 +17,12 @@
             let obj = new object();
             let gui = new dat.GUI();
             let showWireframe = gui.add(obj, 'wireframe');
+            //Toggle wireframe on material
             showWireframe.onChange(() => {
-                //Toggle wireframe on material
                 material.needsUpdate = true;
                 material.wireframe = obj.wireframe;
             });
-            let setWindForce = gui.add(obj, 'windForce', 0, 0.2); //only displayed as integer
+            let setWindForce = gui.add(obj, 'windForce', 0, 10); //only displayed as integer
             
 			const scene = new THREE.Scene();
 			let camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
@@ -33,11 +33,11 @@
 			document.body.appendChild( renderer.domElement );
             
             // Objects in scene
-            const WIDTHVERTICES = 30;
-            const HEIGHTVERTICES = 30;
+            const WIDTHSEGMENTS = 5;
+            const HEIGHTSEGMENTS = 5;
             const CLOTHWIDTH = 5;
             const CLOTHHEIGHT = 5;
-            let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHVERTICES, HEIGHTVERTICES );
+            let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
             let planeVertices = geometry.getAttribute('position');
             geometry.userData.oldPosition = planeVertices;
             /*
@@ -49,21 +49,21 @@
             scene.add( directionalLight2 );
             */
             let light = new THREE.PointLight( 0xffffff, 1, 100 );
-            light.position.set( 10, 10, 10 );
+            light.position.set( 0, 0, 10 );
             scene.add( light );
             let material = new THREE.MeshLambertMaterial( {color: 0xffff00, side: THREE.DoubleSide, wireframe: false} );
             let plane = new THREE.Mesh( geometry, material );
             scene.add( plane );
             
             const gravity = 9.8; // m/s^2
-            const mass = 0.001; // kg
-            const structuralSpringLength = CLOTHWIDTH/WIDTHVERTICES; // m
+            const structuralSpringLength = CLOTHWIDTH/WIDTHSEGMENTS; // m
             const bendSpringLength = 2 * structuralSpringLength; // m
             const shearSpringLength = Math.sqrt(2 * Math.pow(structuralSpringLength, 2)); // m
-            const structuralSpringConstant = 0.2/structuralSpringLength; // N/m
-            const shearSpringConstant = 0.2/shearSpringLength; // N/m
-            const bendSpringConstant = 0.2/bendSpringLength; // N/m
-            let timestep = 1/60; // s/frame
+            const structuralSpringConstant = 25/structuralSpringLength; // N/m
+            const shearSpringConstant = 25/shearSpringLength; // N/m
+            const bendSpringConstant = 25/bendSpringLength; // N/m
+            const mass = 0.3*Math.pow(structuralSpringLength,2)/4; // kg  (300 gsm where 1000 gsm = 1 kg/m^2, typically 4 vertices per m^2)
+            let timestep = 1/30; // s/frame
             let springForce = new THREE.Vector3(0,0,0); // N
             let tempVec = new THREE.Vector3(0,0,0); // m
             let tempVec2 = new THREE.Vector3(0,0,0); // m
@@ -89,58 +89,58 @@
                         springForce.add(tempVec2.sub(tempVec.normalize().multiplyScalar(springLength)).multiplyScalar(-springConstant));
                     }
                     
-                    if(!(i === 0 || i === WIDTHVERTICES)) //Suspended corners
+                    if(!(i === 0 || i === WIDTHSEGMENTS)) //Suspended corners
                     {
                         //Structural springs
-                        if(i > WIDTHVERTICES) //if not first row
+                        if(i > WIDTHSEGMENTS) //if not first row
                         {
-                            calcSpringForce(i-WIDTHVERTICES-1, tempVec, structuralSpringLength, structuralSpringConstant);
+                            calcSpringForce(i-WIDTHSEGMENTS-1, tempVec, structuralSpringLength, structuralSpringConstant);
                         }
-                        if(i < (WIDTHVERTICES+1)*HEIGHTVERTICES) //if not last row
+                        if(i < (WIDTHSEGMENTS+1)*HEIGHTSEGMENTS) //if not last row
                         {
-                            calcSpringForce(i+WIDTHVERTICES+1, tempVec, structuralSpringLength, structuralSpringConstant);
+                            calcSpringForce(i+WIDTHSEGMENTS+1, tempVec, structuralSpringLength, structuralSpringConstant);
                         }
-                        if(i%(WIDTHVERTICES+1) !== 0) //if not first column
+                        if(i%(WIDTHSEGMENTS+1) !== 0) //if not first column
                         {
                             calcSpringForce(i-1, tempVec, structuralSpringLength, structuralSpringConstant);
                         }
-                        if((i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0) //if not last column
+                        if((i-WIDTHSEGMENTS)%(WIDTHSEGMENTS+1) !== 0) //if not last column
                         {
                             calcSpringForce(i+1, tempVec, structuralSpringLength, structuralSpringConstant);
                         }
                         
                         //Shear springs
-                        if(i > WIDTHVERTICES && i%(WIDTHVERTICES+1) !== 0) //if not first row and not first column
+                        if(i > WIDTHSEGMENTS && i%(WIDTHSEGMENTS+1) !== 0) //if not first row and not first column
                         {
-                            calcSpringForce(i-WIDTHVERTICES-2, tempVec, shearSpringLength, shearSpringConstant);
+                            calcSpringForce(i-WIDTHSEGMENTS-2, tempVec, shearSpringLength, shearSpringConstant);
                         }
-                        if(i > WIDTHVERTICES && (i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0) //if not first row and not last column
+                        if(i > WIDTHSEGMENTS && (i-WIDTHSEGMENTS)%(WIDTHSEGMENTS+1) !== 0) //if not first row and not last column
                         {
-                            calcSpringForce(i-WIDTHVERTICES, tempVec, shearSpringLength, shearSpringConstant);
+                            calcSpringForce(i-WIDTHSEGMENTS, tempVec, shearSpringLength, shearSpringConstant);
                         }
-                        if(i < (WIDTHVERTICES+1)*HEIGHTVERTICES && i%(WIDTHVERTICES+1) !== 0) //if not last row and not first column
+                        if(i < (WIDTHSEGMENTS+1)*HEIGHTSEGMENTS && i%(WIDTHSEGMENTS+1) !== 0) //if not last row and not first column
                         {
-                            calcSpringForce(i+WIDTHVERTICES, tempVec, shearSpringLength, shearSpringConstant);
+                            calcSpringForce(i+WIDTHSEGMENTS, tempVec, shearSpringLength, shearSpringConstant);
                         }
-                        if(i < (WIDTHVERTICES+1)*HEIGHTVERTICES && (i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0) //if not last row and not last column
+                        if(i < (WIDTHSEGMENTS+1)*HEIGHTSEGMENTS && (i-WIDTHSEGMENTS)%(WIDTHSEGMENTS+1) !== 0) //if not last row and not last column
                         {
-                            calcSpringForce(i+WIDTHVERTICES+2, tempVec, shearSpringLength, shearSpringConstant);
+                            calcSpringForce(i+WIDTHSEGMENTS+2, tempVec, shearSpringLength, shearSpringConstant);
                         }
                         
                         //Bending springs
-                        if(i > 2*WIDTHVERTICES+1) //if not first or second row
+                        if(i > 2*WIDTHSEGMENTS+1) //if not first or second row
                         {
-                            calcSpringForce(i-2*(WIDTHVERTICES+1), tempVec, bendSpringLength, bendSpringConstant);
+                            calcSpringForce(i-2*(WIDTHSEGMENTS+1), tempVec, bendSpringLength, bendSpringConstant);
                         }
-                        if(i < (WIDTHVERTICES+1)*(HEIGHTVERTICES-1)) //if not second last or last row
+                        if(i < (WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS-1)) //if not second last or last row
                         {
-                            calcSpringForce(i+2*(WIDTHVERTICES+1), tempVec, bendSpringLength, bendSpringConstant);
+                            calcSpringForce(i+2*(WIDTHSEGMENTS+1), tempVec, bendSpringLength, bendSpringConstant);
                         }
-                        if(i%(WIDTHVERTICES+1) !== 0 && (i-1)%(WIDTHVERTICES+1) !== 0) //if not first or second column
+                        if(i%(WIDTHSEGMENTS+1) !== 0 && (i-1)%(WIDTHSEGMENTS+1) !== 0) //if not first or second column
                         {
                             calcSpringForce(i-2, tempVec, bendSpringLength, bendSpringConstant);
                         }
-                        if((i-WIDTHVERTICES)%(WIDTHVERTICES+1) !== 0 && (i-WIDTHVERTICES+1)%(WIDTHVERTICES+1) !== 0) //if not second last or last column
+                        if((i-WIDTHSEGMENTS)%(WIDTHSEGMENTS+1) !== 0 && (i-WIDTHSEGMENTS+1)%(WIDTHSEGMENTS+1) !== 0) //if not second last or last column
                         {
                             calcSpringForce(i+2, tempVec, bendSpringLength, bendSpringConstant);
                         }
