@@ -44,6 +44,15 @@
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			document.body.appendChild( renderer.domElement );
             
+            //Resize canvas when window is
+            window.addEventListener( 'resize', onWindowResize, false );
+            function onWindowResize()
+            {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize( window.innerWidth, window.innerHeight );
+            }
+            
             // Objects in scene
             const WIDTHSEGMENTS = 40;
             const HEIGHTSEGMENTS = 40;
