@@ -13,6 +13,7 @@
             function object() {
                 this.wireframe = false;
                 this.windForce = 0;
+                this.normals = false;
             };
             let obj = new object();
             let gui = new dat.GUI();
@@ -21,6 +22,17 @@
             showWireframe.onChange(() => {
                 material.needsUpdate = true;
                 material.wireframe = obj.wireframe;
+            });
+            let showNormals = gui.add(obj, 'normals');
+            showNormals.onChange(()=>{
+                if(obj.normals)
+                {
+                    scene.add(helper);
+                }
+                else
+                {
+                    scene.remove(helper);
+                }
             });
             let setWindForce = gui.add(obj, 'windForce', 0, 10); //only displayed as integer
             
@@ -33,8 +45,8 @@
 			document.body.appendChild( renderer.domElement );
             
             // Objects in scene
-            const WIDTHSEGMENTS = 5;
-            const HEIGHTSEGMENTS = 5;
+            const WIDTHSEGMENTS = 40;
+            const HEIGHTSEGMENTS = 40;
             const CLOTHWIDTH = 5;
             const CLOTHHEIGHT = 5;
             let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
@@ -54,16 +66,18 @@
             let material = new THREE.MeshLambertMaterial( {color: 0xffff00, side: THREE.DoubleSide, wireframe: false} );
             let plane = new THREE.Mesh( geometry, material );
             scene.add( plane );
+            let helper = new THREE.VertexNormalsHelper( plane, 0.5, 0x0000ff, 1 );
+            //scene.add( helper );
             
-            const gravity = 9.8; // m/s^2
+            const gravity = 9.82; // m/s^2
             const structuralSpringLength = CLOTHWIDTH/WIDTHSEGMENTS; // m
             const bendSpringLength = 2 * structuralSpringLength; // m
             const shearSpringLength = Math.sqrt(2 * Math.pow(structuralSpringLength, 2)); // m
-            const structuralSpringConstant = 25/structuralSpringLength; // N/m
-            const shearSpringConstant = 25/shearSpringLength; // N/m
-            const bendSpringConstant = 25/bendSpringLength; // N/m
-            const mass = 0.3*Math.pow(structuralSpringLength,2)/4; // kg  (300 gsm where 1000 gsm = 1 kg/m^2, typically 4 vertices per m^2)
-            let timestep = 1/30; // s/frame
+            const structuralSpringConstant = 0.2/structuralSpringLength; // N/m
+            const shearSpringConstant = 0.2/shearSpringLength; // N/m
+            const bendSpringConstant = 0.1/bendSpringLength; // N/m
+            const mass = 0.1*(CLOTHWIDTH*CLOTHHEIGHT)/((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)); // kg (300 gsm where 1 gsm = 1 g/m^2)
+            let timestep = 1/60; // s/frame
             let springForce = new THREE.Vector3(0,0,0); // N
             let tempVec = new THREE.Vector3(0,0,0); // m
             let tempVec2 = new THREE.Vector3(0,0,0); // m
@@ -145,7 +159,6 @@
                             calcSpringForce(i+2, tempVec, bendSpringLength, bendSpringConstant);
                         }
                         
-                        
                         //Update old position
                         geometry.userData.oldPosition.setXYZ(planeVertices.getX(), planeVertices.getY(), planeVertices.getZ()); //For xyz at the same time
                         planeVertices.setXYZ(i, 
@@ -158,8 +171,12 @@
                 
 				//plane.rotation.x += 0.01;
 				//plane.rotation.y += 0.01;
-
-				renderer.render( scene, camera );
+                
+                //update normals for better shadows
+                geometry.computeVertexNormals(false);
+                geometry.normalizeNormals();
+				helper.update();
+                renderer.render( scene, camera );
 			};
 
 			animate();
