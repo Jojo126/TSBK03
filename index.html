@@ -8,7 +8,21 @@
 	</head>
 	<body>
 		<script src="js/three.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
 		<script>
+            function object() {
+                this.wireframe = false;
+                this.windForce = 0;
+            };
+            let obj = new object();
+            let gui = new dat.GUI();
+            let showWireframe = gui.add(obj, 'wireframe');
+            showWireframe.onChange(() => {
+                //Toggle wireframe on material
+                material.needsUpdate = true;
+                material.wireframe = obj.wireframe;
+            });
+            let setWindForce = gui.add(obj, 'windForce', 0, 0.2); //only displayed as integer
             
 			const scene = new THREE.Scene();
 			let camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
@@ -26,17 +40,17 @@
             let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHVERTICES, HEIGHTVERTICES );
             let planeVertices = geometry.getAttribute('position');
             geometry.userData.oldPosition = planeVertices;
-            
+            /*
             let directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
             directionalLight.position.set( 0, 0, 10 );
             scene.add( directionalLight );
             let directionalLight2 = new THREE.DirectionalLight( 0xffffff, 1 );
             directionalLight2.position.set( 0, 0, -10 );
             scene.add( directionalLight2 );
-            /*
+            */
             let light = new THREE.PointLight( 0xffffff, 1, 100 );
-            light.position.set( -10, -10, -10 );
-            scene.add( light );*/
+            light.position.set( 10, 10, 10 );
+            scene.add( light );
             let material = new THREE.MeshLambertMaterial( {color: 0xffff00, side: THREE.DoubleSide, wireframe: false} );
             let plane = new THREE.Mesh( geometry, material );
             scene.add( plane );
@@ -137,7 +151,7 @@
                         planeVertices.setXYZ(i, 
                                              2*planeVertices.getX(i) - geometry.userData.oldPosition.getX(i) - Math.pow(timestep,2)*(springForce.getComponent(0))/mass,
                                              2*planeVertices.getY(i) - geometry.userData.oldPosition.getY(i) - Math.pow(timestep,2)*(gravity*mass+springForce.getComponent(1))/mass,
-                                             2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*(springForce.getComponent(2)+0.1*Math.cos(time/450))/mass);
+                                             2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*(springForce.getComponent(2)+obj.windForce*Math.cos(time/450))/mass);
                         time += timestep;
                     }
                 }
