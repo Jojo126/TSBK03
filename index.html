@@ -10,6 +10,10 @@
 		<script src="js/three.js"></script>
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
 		<script>
+            
+            
+            /**********      dat.gui menu       ***********/
+            
             function object() {
                 this.wireframe = false;
                 this.windForce = 0;
@@ -36,6 +40,10 @@
             });
             let setWindForce = gui.add(obj, 'windForce', 0, 10); //only displayed as integer
             
+            
+            
+            /***************      Three.js setup       ****************/
+            
 			const scene = new THREE.Scene();
 			let camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
             camera.position.z = 5;
@@ -54,13 +62,20 @@
             }
             
             // Objects in scene
-            const WIDTHSEGMENTS = 40;
-            const HEIGHTSEGMENTS = 40;
+            const WIDTHSEGMENTS = 30;
+            const HEIGHTSEGMENTS = 30;
             const CLOTHWIDTH = 5;
             const CLOTHHEIGHT = 5;
             let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
             let planeVertices = geometry.getAttribute('position');
             geometry.userData.oldPosition = planeVertices;
+            geometry.userData.velocity = [];
+            for (let i = 0; i < planeVertices.count; i += 1) 
+            {
+                geometry.userData.velocity.push(new THREE.Vector3(0,0,0));
+            }
+            geometry.userData.oldVelocity = geometry.userData.velocity;
+            //console.log(geometry.userData.velocity);
             /*
             let directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
             directionalLight.position.set( 0, 0, 10 );
@@ -85,12 +100,15 @@
             const shearSpringLength = Math.sqrt(2 * Math.pow(structuralSpringLength, 2)); // m
             const structuralSpringConstant = 0.2/structuralSpringLength; // N/m
             const shearSpringConstant = 0.2/shearSpringLength; // N/m
-            const bendSpringConstant = 0.1/bendSpringLength; // N/m
+            const bendSpringConstant = 0.2/bendSpringLength; // N/m
             const mass = 0.1*(CLOTHWIDTH*CLOTHHEIGHT)/((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)); // kg (300 gsm where 1 gsm = 1 g/m^2)
             let timestep = 1/60; // s/frame
             let springForce = new THREE.Vector3(0,0,0); // N
             let posDiff = new THREE.Vector3(0,0,0); // m
             let posDiffCopy = new THREE.Vector3(0,0,0); // m
+            
+            const dampingConstant = 0.12;
+            let dampingForce = new THREE.Vector3(0,0,0);
             let time = 0;
             
             // Render-loop
@@ -100,10 +118,11 @@
                 // Updating vertices position
                 geometry.attributes.position.needsUpdate = true;
                 for (let i = 0; i < planeVertices.count; i += 1) 
-                {    
+                {   
                     springForce.set(0,0,0);
                     posDiff.set(0,0,0);
                     posDiffCopy.set(0,0,0);
+                    dampingForce.set(0,0,0);
                     
                     function calcSpringForce(vertIndex, posDiff, springLength, springConstant) {
                         posDiff.set(planeVertices.getX(vertIndex)-planeVertices.getX(i),
@@ -111,6 +130,8 @@
                                     planeVertices.getZ(vertIndex)-planeVertices.getZ(i));
                         posDiffCopy.set(posDiff.x,posDiff.y,posDiff.z);
                         springForce.add(posDiffCopy.sub(posDiff.normalize().multiplyScalar(springLength)).multiplyScalar(-springConstant));
+                        dampingForce.add(geometry.userData.velocity[vertIndex].sub(geometry.userData.velocity[i]).multiplyScalar(dampingConstant));
+                        //console.log(dampingForce);
                     }
                     
                     if(!(i === 0 || i === WIDTHSEGMENTS)) //Suspended corners
@@ -171,10 +192,21 @@
                         
                         //Update old position
                         geometry.userData.oldPosition.setXYZ(planeVertices.getX(), planeVertices.getY(), planeVertices.getZ()); //For xyz at the same time
+                        geometry.userData.oldVelocity[i] = geometry.userData.velocity[i];
+                        
+                        let accX = (springForce.getComponent(0)+dampingForce.getComponent(0))/mass;
+                        let accY = (gravity*mass+springForce.getComponent(1)+dampingForce.getComponent(1))/mass;
+                        let accZ = (springForce.getComponent(2)+dampingForce.getComponent(2)+obj.windForce*Math.cos(time/450))/mass;
+                        
                         planeVertices.setXYZ(i, 
-                                             2*planeVertices.getX(i) - geometry.userData.oldPosition.getX(i) - Math.pow(timestep,2)*(springForce.getComponent(0))/mass,
-                                             2*planeVertices.getY(i) - geometry.userData.oldPosition.getY(i) - Math.pow(timestep,2)*(gravity*mass+springForce.getComponent(1))/mass,
-                                             2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*(springForce.getComponent(2)+obj.windForce*Math.cos(time/450))/mass);
+                                             2*planeVertices.getX(i) - geometry.userData.oldPosition.getX(i) - Math.pow(timestep,2)*accX,
+                                             2*planeVertices.getY(i) - geometry.userData.oldPosition.getY(i) - Math.pow(timestep,2)*accY,
+                                             2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*accZ);
+                        
+                        geometry.userData.velocity[i].setX(2*geometry.userData.velocity[i].getComponent(0) - geometry.userData.oldVelocity[i].getComponent(0)-timestep*accX);
+                        geometry.userData.velocity[i].setY(2*geometry.userData.velocity[i].getComponent(1) - geometry.userData.oldVelocity[i].getComponent(1)-timestep*accY);
+                        geometry.userData.velocity[i].setZ(2*geometry.userData.velocity[i].getComponent(2) - geometry.userData.oldVelocity[i].getComponent(2)-timestep*accZ);
+                        
                         time += timestep;
                     }
                 }
