@@ -62,19 +62,11 @@
             }
             
             // Objects in scene
-            const WIDTHSEGMENTS = 30;
-            const HEIGHTSEGMENTS = 30;
+            const WIDTHSEGMENTS = 15;
+            const HEIGHTSEGMENTS = 15;
             const CLOTHWIDTH = 5;
             const CLOTHHEIGHT = 5;
             let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
-            let planeVertices = geometry.getAttribute('position');
-            geometry.userData.oldPosition = planeVertices;
-            geometry.userData.velocity = [];
-            for (let i = 0; i < planeVertices.count; i += 1) 
-            {
-                geometry.userData.velocity.push(new THREE.Vector3(0,0,0));
-            }
-            geometry.userData.oldVelocity = geometry.userData.velocity;
             //console.log(geometry.userData.velocity);
             /*
             let directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
@@ -93,24 +85,45 @@
             let helper = new THREE.VertexNormalsHelper( plane, 0.5, 0x0000ff, 1 );
             
             /*****************************     Simulation      ***********************************/
+            let planeVertices = geometry.getAttribute('position');
+            geometry.userData.prevPosition = [];
+            geometry.userData.velocity = [];
+            geometry.userData.prevVelocity = [];
+            geometry.userData.acceleration = [];
+            geometry.userData.prevAcceleration = [];
+            for (let i = 0; i < planeVertices.count; i += 1) 
+            {
+                geometry.userData.prevPosition.push(new THREE.Vector3(planeVertices.getX(i),planeVertices.getY(i),planeVertices.getZ(i)));
+                geometry.userData.velocity.push(new THREE.Vector3(0,0,0));
+                geometry.userData.prevVelocity.push(new THREE.Vector3(0,0,0));
+                geometry.userData.acceleration.push(new THREE.Vector3(0,0,0)); //change to acceleration from F=ma
+                geometry.userData.prevAcceleration.push(new THREE.Vector3(0,0,0));
+            }
+            //test to see that the are not updated together
+            //planeVertices.setXYZ(0,1,2,3);
+            //console.log(planeVertices);
+            //console.log(geometry.userData.prevPosition);
+            //geometry.userData.velocity[0].set(1,2,3);
+            //console.log(geometry.userData.velocity);
+            //console.log(geometry.userData.prevVelocity);
             
             const gravity = 9.82; // m/s^2
             const structuralSpringLength = CLOTHWIDTH/WIDTHSEGMENTS; // m
             const bendSpringLength = 2 * structuralSpringLength; // m
             const shearSpringLength = Math.sqrt(2 * Math.pow(structuralSpringLength, 2)); // m
-            const structuralSpringConstant = 0.2/structuralSpringLength; // N/m
-            const shearSpringConstant = 0.2/shearSpringLength; // N/m
-            const bendSpringConstant = 0.2/bendSpringLength; // N/m
+            const structuralSpringConstant = 0.5/structuralSpringLength; // N/m
+            const shearSpringConstant = 0.5/shearSpringLength; // N/m
+            const bendSpringConstant = 0.5/bendSpringLength; // N/m
             const mass = 0.1*(CLOTHWIDTH*CLOTHHEIGHT)/((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)); // kg (300 gsm where 1 gsm = 1 g/m^2)
-            let timestep = 1/60; // s/frame
+            let timestep = 1/30; // s/frame
             let springForce = new THREE.Vector3(0,0,0); // N
             let posDiff = new THREE.Vector3(0,0,0); // m
             let posDiffCopy = new THREE.Vector3(0,0,0); // m
             
-            const dampingConstant = 0.12;
+            const dampingConstant = 0.1;
             let dampingForce = new THREE.Vector3(0,0,0);
             let time = 0;
-            
+            //console.log(planeVertices);
             // Render-loop
 			const animate = function () {
 				requestAnimationFrame( animate );
@@ -125,12 +138,16 @@
                     dampingForce.set(0,0,0);
                     
                     function calcSpringForce(vertIndex, posDiff, springLength, springConstant) {
-                        posDiff.set(planeVertices.getX(vertIndex)-planeVertices.getX(i),
-                                    planeVertices.getY(vertIndex)-planeVertices.getY(i),
-                                    planeVertices.getZ(vertIndex)-planeVertices.getZ(i));
+                        posDiff.set(planeVertices.getX(i)-planeVertices.getX(vertIndex),
+                                    planeVertices.getY(i)-planeVertices.getY(vertIndex),
+                                    planeVertices.getZ(i)-planeVertices.getZ(vertIndex));
                         posDiffCopy.set(posDiff.x,posDiff.y,posDiff.z);
+                        //console.log(planeVertices.getX(vertIndex)-planeVertices.getX(i));
                         springForce.add(posDiffCopy.sub(posDiff.normalize().multiplyScalar(springLength)).multiplyScalar(-springConstant));
-                        dampingForce.add(geometry.userData.velocity[vertIndex].sub(geometry.userData.velocity[i]).multiplyScalar(dampingConstant));
+                        //console.log(posDiffCopy);
+                        //console.log(posDiff.normalize().multiplyScalar(springLength));
+                        //console.log(springForce);
+                        dampingForce.add(geometry.userData.velocity[vertIndex].sub(geometry.userData.velocity[i]).multiplyScalar(-dampingConstant));
                         //console.log(dampingForce);
                     }
                     
@@ -190,23 +207,48 @@
                             calcSpringForce(i+2, posDiff, bendSpringLength, bendSpringConstant);
                         }
                         
-                        //Update old position
-                        geometry.userData.oldPosition.setXYZ(planeVertices.getX(), planeVertices.getY(), planeVertices.getZ()); //For xyz at the same time
-                        geometry.userData.oldVelocity[i] = geometry.userData.velocity[i];
+                        //Update previous position
                         
+                        geometry.userData.prevPosition[i].set(planeVertices.getX(i), planeVertices.getY(i), planeVertices.getZ(i)); //For xyz at the same time
+                        geometry.userData.prevVelocity[i] = geometry.userData.velocity[i];
+                        //console.log(geometry.userData.prevPosition[i]);
+                        //console.log(geometry.userData.prevVelocity[i]);
+                        
+                        planeVertices.setXYZ(i,
+                                             geometry.userData.prevPosition[i].getComponent(0)+geometry.userData.prevVelocity[i].getComponent(0)*timestep+geometry.userData.prevAcceleration[i].getComponent(0)*Math.pow(timestep,2)*0.5,
+                                             geometry.userData.prevPosition[i].getComponent(1)+geometry.userData.prevVelocity[i].getComponent(1)*timestep+geometry.userData.prevAcceleration[i].getComponent(1)*Math.pow(timestep,2)*0.5,
+                                             geometry.userData.prevPosition[i].getComponent(2)+geometry.userData.prevVelocity[i].getComponent(2)*timestep+geometry.userData.prevAcceleration[i].getComponent(2)*Math.pow(timestep,2)*0.5);
+                        geometry.userData.acceleration[i].set((springForce.getComponent(0)+dampingForce.getComponent(0))/mass,
+                                                              (-gravity*mass+springForce.getComponent(1)+dampingForce.getComponent(1))/mass,
+                                                              (springForce.getComponent(2)+dampingForce.getComponent(2)+obj.windForce*Math.cos(time/450))/mass);
+                        geometry.userData.velocity[i].set(geometry.userData.prevVelocity[i].getComponent(0)+(geometry.userData.prevAcceleration[i].getComponent(0)+geometry.userData.acceleration[i].getComponent(0))*(timestep*0.5),
+                                                          geometry.userData.prevVelocity[i].getComponent(1)+(geometry.userData.prevAcceleration[i].getComponent(1)+geometry.userData.acceleration[i].getComponent(1))*(timestep*0.5),
+                                                          geometry.userData.prevVelocity[i].getComponent(2)+(geometry.userData.prevAcceleration[i].getComponent(2)+geometry.userData.acceleration[i].getComponent(2))*(timestep*0.5));
+                        geometry.userData.prevPosition[i].set(planeVertices.getX(i),planeVertices.getY(i),planeVertices.getZ(i));
+                        geometry.userData.prevVelocity[i].set(geometry.userData.velocity[i].getComponent(0),
+                                                              geometry.userData.velocity[i].getComponent(1),
+                                                              geometry.userData.velocity[i].getComponent(2));
+                        geometry.userData.prevAcceleration[i].set(geometry.userData.acceleration[i].getComponent(0),
+                                                                  geometry.userData.acceleration[i].getComponent(1),
+                                                                  geometry.userData.acceleration[i].getComponent(2));
+                        
+                        /*
                         let accX = (springForce.getComponent(0)+dampingForce.getComponent(0))/mass;
                         let accY = (gravity*mass+springForce.getComponent(1)+dampingForce.getComponent(1))/mass;
                         let accZ = (springForce.getComponent(2)+dampingForce.getComponent(2)+obj.windForce*Math.cos(time/450))/mass;
+                        //console.log(dampingForce.getComponent(0)); // 0
+                        //console.log("springforce: " + springForce.getComponent(0)); //nan
+                        //console.log("accX: " + accX); // nan
                         
                         planeVertices.setXYZ(i, 
-                                             2*planeVertices.getX(i) - geometry.userData.oldPosition.getX(i) - Math.pow(timestep,2)*accX,
-                                             2*planeVertices.getY(i) - geometry.userData.oldPosition.getY(i) - Math.pow(timestep,2)*accY,
-                                             2*planeVertices.getZ(i) - geometry.userData.oldPosition.getZ(i) - Math.pow(timestep,2)*accZ);
+                                             2*planeVertices.getX(i) - geometry.userData.prevPosition[i].getComponent(0) - Math.pow(timestep,2)*accX,
+                                             2*planeVertices.getY(i) - geometry.userData.prevPosition[i].getComponent(1) - Math.pow(timestep,2)*accY,
+                                             2*planeVertices.getZ(i) - geometry.userData.prevPosition[i].getComponent(2) - Math.pow(timestep,2)*accZ);
                         
-                        geometry.userData.velocity[i].setX(2*geometry.userData.velocity[i].getComponent(0) - geometry.userData.oldVelocity[i].getComponent(0)-timestep*accX);
-                        geometry.userData.velocity[i].setY(2*geometry.userData.velocity[i].getComponent(1) - geometry.userData.oldVelocity[i].getComponent(1)-timestep*accY);
-                        geometry.userData.velocity[i].setZ(2*geometry.userData.velocity[i].getComponent(2) - geometry.userData.oldVelocity[i].getComponent(2)-timestep*accZ);
-                        
+                        geometry.userData.velocity[i].setX(2*geometry.userData.velocity[i].getComponent(0) - geometry.userData.prevVelocity[i].getComponent(0)-timestep*accX);
+                        geometry.userData.velocity[i].setY(2*geometry.userData.velocity[i].getComponent(1) - geometry.userData.prevVelocity[i].getComponent(1)-timestep*accY);
+                        geometry.userData.velocity[i].setZ(2*geometry.userData.velocity[i].getComponent(2) - geometry.userData.prevVelocity[i].getComponent(2)-timestep*accZ);
+                        */
                         time += timestep;
                     }
                 }
