@@ -88,13 +88,14 @@
             let timestep = 1/50; // s/frame
             let time = 0;
             const gravity = 9.82; // m/s^2
+            const springConstant = 7;
             const mass = 0.3*(CLOTHWIDTH*CLOTHHEIGHT)/((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)); // kg (300 gsm where 1 gsm = 1 g/m^2)
             const structuralSpringLength = CLOTHWIDTH/WIDTHSEGMENTS; // m
             const bendSpringLength = 2 * structuralSpringLength; // m
             const shearSpringLength = Math.sqrt(2 * Math.pow(structuralSpringLength, 2)); // m
-            const structuralSpringConstant = 7/structuralSpringLength; // N/m
-            const shearSpringConstant = 7/shearSpringLength; // N/m
-            const bendSpringConstant = 7/bendSpringLength; // N/m
+            const structuralSpringConstant = springConstant/structuralSpringLength; // N/m
+            const shearSpringConstant = springConstant/shearSpringLength; // N/m
+            const bendSpringConstant = springConstant/bendSpringLength; // N/m
             const dampingConstant = 0.1;
             
             // Init attribute vectors
@@ -141,7 +142,7 @@
                     posDiffCopy.set(0,0,0);
                     dampingForce.set(0,0,0);
                     
-                    function calcSpringForce(vertIndex, posDiff, springLength, springConstant) {
+                    function calcSpringForce(vertIndex, posDiff, springLength, springConst) {
                         posDiff.set(planeVertices.getX(i)-planeVertices.getX(vertIndex),
                                     planeVertices.getY(i)-planeVertices.getY(vertIndex),
                                     planeVertices.getZ(i)-planeVertices.getZ(vertIndex));
@@ -149,7 +150,7 @@
                         //console.log(planeVertices.getX(vertIndex)-planeVertices.getX(i));
                         
                         // F_spring = -k_s(l_0-l) = -springConstant*normalized(posDiff)*springLength
-                        springForce.add(posDiffCopy.sub(posDiff.normalize().multiplyScalar(springLength)).multiplyScalar(-springConstant));
+                        springForce.add(posDiffCopy.sub(posDiff.normalize().multiplyScalar(springLength)).multiplyScalar(-springConst));
                         //console.log(posDiffCopy);
                         //console.log(posDiff.normalize().multiplyScalar(springLength));
                         //console.log(springForce);
