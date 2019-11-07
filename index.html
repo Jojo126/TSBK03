@@ -85,6 +85,19 @@
             let helper = new THREE.VertexNormalsHelper( plane, 0.5, 0x0000ff, 1 );
             
             /*****************************     Simulation      ***********************************/
+            let timestep = 1/50; // s/frame
+            let time = 0;
+            const gravity = 9.82; // m/s^2
+            const mass = 0.3*(CLOTHWIDTH*CLOTHHEIGHT)/((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)); // kg (300 gsm where 1 gsm = 1 g/m^2)
+            const structuralSpringLength = CLOTHWIDTH/WIDTHSEGMENTS; // m
+            const bendSpringLength = 2 * structuralSpringLength; // m
+            const shearSpringLength = Math.sqrt(2 * Math.pow(structuralSpringLength, 2)); // m
+            const structuralSpringConstant = 7/structuralSpringLength; // N/m
+            const shearSpringConstant = 7/shearSpringLength; // N/m
+            const bendSpringConstant = 7/bendSpringLength; // N/m
+            const dampingConstant = 0.1;
+            
+            // Init attribute vectors
             let planeVertices = geometry.getAttribute('position');
             geometry.userData.prevPosition = [];
             geometry.userData.velocity = [];
@@ -96,7 +109,7 @@
                 geometry.userData.prevPosition.push(new THREE.Vector3(planeVertices.getX(i),planeVertices.getY(i),planeVertices.getZ(i)));
                 geometry.userData.velocity.push(new THREE.Vector3(0,0,0));
                 geometry.userData.prevVelocity.push(new THREE.Vector3(0,0,0));
-                geometry.userData.acceleration.push(new THREE.Vector3(0,0,0)); //change to acceleration from F=ma
+                geometry.userData.acceleration.push(new THREE.Vector3(0,-gravity,0));
                 geometry.userData.prevAcceleration.push(new THREE.Vector3(0,0,0));
             }
             //test to see that the are not updated together
@@ -107,22 +120,13 @@
             //console.log(geometry.userData.velocity);
             //console.log(geometry.userData.prevVelocity);
             
-            const gravity = 9.82; // m/s^2
-            const structuralSpringLength = CLOTHWIDTH/WIDTHSEGMENTS; // m
-            const bendSpringLength = 2 * structuralSpringLength; // m
-            const shearSpringLength = Math.sqrt(2 * Math.pow(structuralSpringLength, 2)); // m
-            const structuralSpringConstant = 0.5/structuralSpringLength; // N/m
-            const shearSpringConstant = 0.5/shearSpringLength; // N/m
-            const bendSpringConstant = 0.5/bendSpringLength; // N/m
-            const mass = 0.1*(CLOTHWIDTH*CLOTHHEIGHT)/((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)); // kg (300 gsm where 1 gsm = 1 g/m^2)
-            let timestep = 1/30; // s/frame
+            // Init temp vectors
             let springForce = new THREE.Vector3(0,0,0); // N
+            let dampingForce = new THREE.Vector3(0,0,0); // N
             let posDiff = new THREE.Vector3(0,0,0); // m
             let posDiffCopy = new THREE.Vector3(0,0,0); // m
             
-            const dampingConstant = 0.1;
-            let dampingForce = new THREE.Vector3(0,0,0);
-            let time = 0;
+            
             //console.log(planeVertices);
             // Render-loop
 			const animate = function () {
@@ -143,11 +147,15 @@
                                     planeVertices.getZ(i)-planeVertices.getZ(vertIndex));
                         posDiffCopy.set(posDiff.x,posDiff.y,posDiff.z);
                         //console.log(planeVertices.getX(vertIndex)-planeVertices.getX(i));
+                        
+                        // F_spring = -k_s(l_0-l) = -springConstant*normalized(posDiff)*springLength
                         springForce.add(posDiffCopy.sub(posDiff.normalize().multiplyScalar(springLength)).multiplyScalar(-springConstant));
                         //console.log(posDiffCopy);
                         //console.log(posDiff.normalize().multiplyScalar(springLength));
                         //console.log(springForce);
-                        dampingForce.add(geometry.userData.velocity[vertIndex].sub(geometry.userData.velocity[i]).multiplyScalar(-dampingConstant));
+                        
+                        // F_damp = k_d(v1-v2)
+                        dampingForce.add(geometry.userData.velocity[i].sub(geometry.userData.velocity[vertIndex]).multiplyScalar(dampingConstant));
                         //console.log(dampingForce);
                     }
                     
@@ -218,9 +226,10 @@
                                              geometry.userData.prevPosition[i].getComponent(0)+geometry.userData.prevVelocity[i].getComponent(0)*timestep+geometry.userData.prevAcceleration[i].getComponent(0)*Math.pow(timestep,2)*0.5,
                                              geometry.userData.prevPosition[i].getComponent(1)+geometry.userData.prevVelocity[i].getComponent(1)*timestep+geometry.userData.prevAcceleration[i].getComponent(1)*Math.pow(timestep,2)*0.5,
                                              geometry.userData.prevPosition[i].getComponent(2)+geometry.userData.prevVelocity[i].getComponent(2)*timestep+geometry.userData.prevAcceleration[i].getComponent(2)*Math.pow(timestep,2)*0.5);
-                        geometry.userData.acceleration[i].set((springForce.getComponent(0)+dampingForce.getComponent(0))/mass,
-                                                              (-gravity*mass+springForce.getComponent(1)+dampingForce.getComponent(1))/mass,
-                                                              (springForce.getComponent(2)+dampingForce.getComponent(2)+obj.windForce*Math.cos(time/450))/mass);
+                        // F_net = F_spring - F_damp - F_g + F_wind
+                        geometry.userData.acceleration[i].set((springForce.getComponent(0)-dampingForce.getComponent(0))/mass,
+                                                              (-gravity*mass+springForce.getComponent(1)-dampingForce.getComponent(1))/mass,
+                                                              (springForce.getComponent(2)-dampingForce.getComponent(2)+obj.windForce*Math.cos(time/450))/mass);
                         geometry.userData.velocity[i].set(geometry.userData.prevVelocity[i].getComponent(0)+(geometry.userData.prevAcceleration[i].getComponent(0)+geometry.userData.acceleration[i].getComponent(0))*(timestep*0.5),
                                                           geometry.userData.prevVelocity[i].getComponent(1)+(geometry.userData.prevAcceleration[i].getComponent(1)+geometry.userData.acceleration[i].getComponent(1))*(timestep*0.5),
                                                           geometry.userData.prevVelocity[i].getComponent(2)+(geometry.userData.prevAcceleration[i].getComponent(2)+geometry.userData.acceleration[i].getComponent(2))*(timestep*0.5));
