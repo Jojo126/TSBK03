@@ -16,8 +16,10 @@
             
             function object() {
                 this.wireframe = false;
-                this.windForce = 0;
                 this.normals = false;
+                this.windForce = 0;
+                this.springConstant = 7;
+                this.dampingConstant = 0.04;
             };
             let obj = new object();
             let gui = new dat.GUI();
@@ -39,7 +41,22 @@
                 }
             });
             let setWindForce = gui.add(obj, 'windForce', 0, 10); //only displayed as integer
-            
+            //doesn't get updated during runtime?
+            let setSpringConst = gui.add(obj, 'springConstant', 0, 10);
+            setSpringConst.onChange(()=>{
+                springConstant = obj.springConstant;
+                structuralSpringConstant = springConstant/structuralSpringLength; // N/m
+                shearSpringConstant = springConstant/shearSpringLength; // N/m
+                bendSpringConstant = springConstant/bendSpringLength; // N/m
+                
+            });
+            let setDampingConst = gui.add(obj, 'dampingConstant', 0, 0.05);
+            setDampingConst.onChange(()=>{
+                dampingConstant = obj.dampingConstant;
+                structuralDampingConstant = dampingConstant/structuralSpringLength; // N/m
+                shearDampingConstant = dampingConstant/shearSpringLength; // N/m
+                bendDampingConstant = dampingConstant/bendSpringLength; // N/m
+            });
             
             
             /***************      Three.js setup       ****************/
@@ -88,15 +105,18 @@
             let timestep = 1/50; // s/frame
             let time = 0;
             const gravity = 9.82; // m/s^2
-            const springConstant = 7;
+            let springConstant = obj.springConstant;
             const mass = 0.3*(CLOTHWIDTH*CLOTHHEIGHT)/((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)); // kg (300 gsm where 1 gsm = 1 g/m^2)
             const structuralSpringLength = CLOTHWIDTH/WIDTHSEGMENTS; // m
             const bendSpringLength = 2 * structuralSpringLength; // m
             const shearSpringLength = Math.sqrt(2 * Math.pow(structuralSpringLength, 2)); // m
-            const structuralSpringConstant = springConstant/structuralSpringLength; // N/m
-            const shearSpringConstant = springConstant/shearSpringLength; // N/m
-            const bendSpringConstant = springConstant/bendSpringLength; // N/m
-            const dampingConstant = 0.1;
+            let structuralSpringConstant = springConstant/structuralSpringLength; // N/m
+            let shearSpringConstant = springConstant/shearSpringLength; // N/m
+            let bendSpringConstant = springConstant/bendSpringLength; // N/m
+            let dampingConstant = obj.dampingConstant;
+            let structuralDampingConstant = dampingConstant/structuralSpringLength; // N/m
+            let shearDampingConstant = dampingConstant/shearSpringLength; // N/m
+            let bendDampingConstant = dampingConstant/bendSpringLength; // N/m
             
             // Init attribute vectors
             let planeVertices = geometry.getAttribute('position');
@@ -142,7 +162,7 @@
                     posDiffCopy.set(0,0,0);
                     dampingForce.set(0,0,0);
                     
-                    function calcSpringForce(vertIndex, posDiff, springLength, springConst) {
+                    function calcSpringForce(vertIndex, posDiff, springLength, springConst, dampConst) {
                         posDiff.set(planeVertices.getX(i)-planeVertices.getX(vertIndex),
                                     planeVertices.getY(i)-planeVertices.getY(vertIndex),
                                     planeVertices.getZ(i)-planeVertices.getZ(vertIndex));
@@ -156,7 +176,7 @@
                         //console.log(springForce);
                         
                         // F_damp = k_d(v1-v2)
-                        dampingForce.add(geometry.userData.velocity[i].sub(geometry.userData.velocity[vertIndex]).multiplyScalar(dampingConstant));
+                        dampingForce.add(geometry.userData.velocity[i].sub(geometry.userData.velocity[vertIndex]).multiplyScalar(dampConst));
                         //console.log(dampingForce);
                     }
                     
@@ -165,55 +185,55 @@
                         //Structural springs
                         if(i > WIDTHSEGMENTS) //if not first row
                         {
-                            calcSpringForce(i-WIDTHSEGMENTS-1, posDiff, structuralSpringLength, structuralSpringConstant);
+                            calcSpringForce(i-WIDTHSEGMENTS-1, posDiff, structuralSpringLength, structuralSpringConstant, structuralDampingConstant);
                         }
                         if(i < (WIDTHSEGMENTS+1)*HEIGHTSEGMENTS) //if not last row
                         {
-                            calcSpringForce(i+WIDTHSEGMENTS+1, posDiff, structuralSpringLength, structuralSpringConstant);
+                            calcSpringForce(i+WIDTHSEGMENTS+1, posDiff, structuralSpringLength, structuralSpringConstant, structuralDampingConstant);
                         }
                         if(i%(WIDTHSEGMENTS+1) !== 0) //if not first column
                         {
-                            calcSpringForce(i-1, posDiff, structuralSpringLength, structuralSpringConstant);
+                            calcSpringForce(i-1, posDiff, structuralSpringLength, structuralSpringConstant, structuralDampingConstant);
                         }
                         if((i-WIDTHSEGMENTS)%(WIDTHSEGMENTS+1) !== 0) //if not last column
                         {
-                            calcSpringForce(i+1, posDiff, structuralSpringLength, structuralSpringConstant);
+                            calcSpringForce(i+1, posDiff, structuralSpringLength, structuralSpringConstant, structuralDampingConstant);
                         }
                         
                         //Shear springs
                         if(i > WIDTHSEGMENTS && i%(WIDTHSEGMENTS+1) !== 0) //if not first row and not first column
                         {
-                            calcSpringForce(i-WIDTHSEGMENTS-2, posDiff, shearSpringLength, shearSpringConstant);
+                            calcSpringForce(i-WIDTHSEGMENTS-2, posDiff, shearSpringLength, shearSpringConstant, shearDampingConstant);
                         }
                         if(i > WIDTHSEGMENTS && (i-WIDTHSEGMENTS)%(WIDTHSEGMENTS+1) !== 0) //if not first row and not last column
                         {
-                            calcSpringForce(i-WIDTHSEGMENTS, posDiff, shearSpringLength, shearSpringConstant);
+                            calcSpringForce(i-WIDTHSEGMENTS, posDiff, shearSpringLength, shearSpringConstant, shearDampingConstant);
                         }
                         if(i < (WIDTHSEGMENTS+1)*HEIGHTSEGMENTS && i%(WIDTHSEGMENTS+1) !== 0) //if not last row and not first column
                         {
-                            calcSpringForce(i+WIDTHSEGMENTS, posDiff, shearSpringLength, shearSpringConstant);
+                            calcSpringForce(i+WIDTHSEGMENTS, posDiff, shearSpringLength, shearSpringConstant, shearDampingConstant);
                         }
                         if(i < (WIDTHSEGMENTS+1)*HEIGHTSEGMENTS && (i-WIDTHSEGMENTS)%(WIDTHSEGMENTS+1) !== 0) //if not last row and not last column
                         {
-                            calcSpringForce(i+WIDTHSEGMENTS+2, posDiff, shearSpringLength, shearSpringConstant);
+                            calcSpringForce(i+WIDTHSEGMENTS+2, posDiff, shearSpringLength, shearSpringConstant, shearDampingConstant);
                         }
                         
                         //Bending springs
                         if(i > 2*WIDTHSEGMENTS+1) //if not first or second row
                         {
-                            calcSpringForce(i-2*(WIDTHSEGMENTS+1), posDiff, bendSpringLength, bendSpringConstant);
+                            calcSpringForce(i-2*(WIDTHSEGMENTS+1), posDiff, bendSpringLength, bendSpringConstant, bendDampingConstant);
                         }
                         if(i < (WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS-1)) //if not second last or last row
                         {
-                            calcSpringForce(i+2*(WIDTHSEGMENTS+1), posDiff, bendSpringLength, bendSpringConstant);
+                            calcSpringForce(i+2*(WIDTHSEGMENTS+1), posDiff, bendSpringLength, bendSpringConstant, bendDampingConstant);
                         }
                         if(i%(WIDTHSEGMENTS+1) !== 0 && (i-1)%(WIDTHSEGMENTS+1) !== 0) //if not first or second column
                         {
-                            calcSpringForce(i-2, posDiff, bendSpringLength, bendSpringConstant);
+                            calcSpringForce(i-2, posDiff, bendSpringLength, bendSpringConstant, bendDampingConstant);
                         }
                         if((i-WIDTHSEGMENTS)%(WIDTHSEGMENTS+1) !== 0 && (i-WIDTHSEGMENTS+1)%(WIDTHSEGMENTS+1) !== 0) //if not second last or last column
                         {
-                            calcSpringForce(i+2, posDiff, bendSpringLength, bendSpringConstant);
+                            calcSpringForce(i+2, posDiff, bendSpringLength, bendSpringConstant, bendDampingConstant);
                         }
                         
                         //Update previous position
