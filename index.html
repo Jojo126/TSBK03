@@ -80,6 +80,10 @@
             let camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
             let controls = new THREE.OrbitControls(camera, renderer.domElement);
             camera.position.z = 6;
+            // limit orbitcontrols
+            controls.minDistance = 1;
+            controls.maxDistance = 10;
+            controls.enablePan = false;
             controls.update();
             
             // Objects in scene
