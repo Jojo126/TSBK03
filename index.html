@@ -92,6 +92,7 @@
             const CLOTHWIDTH = 15;
             const CLOTHHEIGHT = 15;
             let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
+            geometry.rotateX(Math.PI/2);
             //console.log(geometry.userData.velocity);
             /*
             let directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
