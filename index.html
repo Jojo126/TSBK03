@@ -93,7 +93,7 @@
             const CLOTHHEIGHT = 15;
             let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
             geometry.rotateX(Math.PI/2);
-            geometry.translate(0,6,0);
+            geometry.translate(0,10,0);
             
             let sphereCenter = new THREE.Vector3(0,0,0);
             let sphereRadius = 1;
@@ -107,10 +107,10 @@
             scene.add( directionalLight2 );
             */
             let light = new THREE.PointLight( 0xffffff, 1, 100 );
-            light.position.set( 0, 0, 10 );
+            light.position.set( 0, 0, 20 );
             scene.add( light );
             let light2 = new THREE.PointLight( 0xffffff, 1, 100 );
-            light2.position.set( 0, 0, -10 );
+            light2.position.set( 0, 0, -5 );
             scene.add( light2 );
             let material = new THREE.MeshLambertMaterial( {color: 0xffff00, side: THREE.DoubleSide, wireframe: false} );
             let plane = new THREE.Mesh( geometry, material );
