@@ -96,7 +96,7 @@
             geometry.translate(0,10,0);
             
             let sphereCenter = new THREE.Vector3(0,0,0);
-            let sphereRadius = 1;
+            let sphereRadius = 3;
             //console.log(geometry.userData.velocity);
             /*
             let directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
@@ -263,11 +263,19 @@
                         prevVel = vel;
                         //console.log(geometry.userData.prevPosition[i]);
                         //console.log(geometry.userData.prevVelocity[i]);
-                        
-                        planeVertices.setXYZ(i,
-                                             prevPos.getComponent(0)+prevVel.getComponent(0)*timestep+prevAcc.getComponent(0)*Math.pow(timestep,2)*0.5,
-                                             prevPos.getComponent(1)+prevVel.getComponent(1)*timestep+prevAcc.getComponent(1)*Math.pow(timestep,2)*0.5,
-                                             prevPos.getComponent(2)+prevVel.getComponent(2)*timestep+prevAcc.getComponent(2)*Math.pow(timestep,2)*0.5);
+                        let newPos = new THREE.Vector3(prevPos.getComponent(0)+prevVel.getComponent(0)*timestep+prevAcc.getComponent(0)*Math.pow(timestep,2)*0.5,
+                                      prevPos.getComponent(1)+prevVel.getComponent(1)*timestep+prevAcc.getComponent(1)*Math.pow(timestep,2)*0.5,
+                                      prevPos.getComponent(2)+prevVel.getComponent(2)*timestep+prevAcc.getComponent(2)*Math.pow(timestep,2)*0.5);
+                        //let newPosX = prevPos.getComponent(0)+prevVel.getComponent(0)*timestep+prevAcc.getComponent(0)*Math.pow(timestep,2)*0.5;
+                        //let newPosY = prevPos.getComponent(1)+prevVel.getComponent(1)*timestep+prevAcc.getComponent(1)*Math.pow(timestep,2)*0.5;
+                        //let newPosZ = prevPos.getComponent(2)+prevVel.getComponent(2)*timestep+prevAcc.getComponent(2)*Math.pow(timestep,2)*0.5;
+                        if(newPos.distanceTo(sphereCenter) <= sphereRadius) {
+                            console.log("collision detected");
+                            let collisionNormal = newPos.sub(sphereCenter).normalize().multiplyScalar(sphereRadius);
+                            
+                            newPos.copy(collisionNormal);
+                        }
+                        planeVertices.setXYZ(i, newPos.getComponent(0), newPos.getComponent(1), newPos.getComponent(2));
                         // F_net = F_spring - F_damp - F_g + F_wind
                         acc.set((springForce.getComponent(0)-dampingForce.getComponent(0))/mass,
                                 (-gravity*mass+springForce.getComponent(1)-dampingForce.getComponent(1))/mass,
