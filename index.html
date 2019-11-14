@@ -18,9 +18,9 @@
             function object() {
                 this.wireframe = false;
                 this.normals = false;
-                this.windForce = 0;
-                this.springConstant = 7;
-                this.dampingConstant = 0.04;
+                this.windForce = 10;
+                this.springConstant = 25;
+                this.dampingConstant = 0.17;
             };
             let obj = new object();
             let gui = new dat.GUI();
@@ -41,9 +41,9 @@
                     scene.remove(helper);
                 }
             });
-            let setWindForce = gui.add(obj, 'windForce', 0, 10); //only displayed as integer
+            let setWindForce = gui.add(obj, 'windForce', 0, 60); //only displayed as integer
             //doesn't get updated during runtime?
-            let setSpringConst = gui.add(obj, 'springConstant', 0, 10);
+            let setSpringConst = gui.add(obj, 'springConstant', 0, 50);
             setSpringConst.onChange(()=>{
                 springConstant = obj.springConstant;
                 structuralSpringConstant = springConstant/structuralSpringLength; // N/m
@@ -51,7 +51,7 @@
                 bendSpringConstant = springConstant/bendSpringLength; // N/m
                 
             });
-            let setDampingConst = gui.add(obj, 'dampingConstant', 0, 0.05);
+            let setDampingConst = gui.add(obj, 'dampingConstant', 0, 1);
             setDampingConst.onChange(()=>{
                 dampingConstant = obj.dampingConstant;
                 structuralDampingConstant = dampingConstant/structuralSpringLength; // N/m
@@ -82,15 +82,15 @@
             camera.position.z = 6;
             // limit orbitcontrols
             controls.minDistance = 1;
-            controls.maxDistance = 10;
+            controls.maxDistance = 40;
             controls.enablePan = false;
             controls.update();
             
             // Objects in scene
-            const WIDTHSEGMENTS = 15;
-            const HEIGHTSEGMENTS = 15;
-            const CLOTHWIDTH = 5;
-            const CLOTHHEIGHT = 5;
+            const WIDTHSEGMENTS = 40;
+            const HEIGHTSEGMENTS = 40;
+            const CLOTHWIDTH = 15;
+            const CLOTHHEIGHT = 15;
             let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
             //console.log(geometry.userData.velocity);
             /*
@@ -113,9 +113,9 @@
             let helper = new THREE.VertexNormalsHelper( plane, 0.5, 0x0000ff, 1 );
             
             /*****************************     Simulation      ***********************************/
-            let timestep = 1/50; // s/frame
+            let timestep = 1/120; // s/frame
             let time = 0;
-            const gravity = 9.82; // m/s^2
+            const gravity = 9.82*16; // m/s^2
             let springConstant = obj.springConstant;
             const mass = 0.3*(CLOTHWIDTH*CLOTHHEIGHT)/((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)); // kg (300 gsm where 1 gsm = 1 g/m^2)
             const structuralSpringLength = CLOTHWIDTH/WIDTHSEGMENTS; // m
@@ -191,7 +191,7 @@
                         //console.log(dampingForce);
                     }
                     
-                    if(!(i === 0 || i === WIDTHSEGMENTS)) //Suspended corners
+                    if(!( i <= WIDTHSEGMENTS)) //Suspended corners
                     {
                         //Structural springs
                         if(i > WIDTHSEGMENTS) //if not first row
