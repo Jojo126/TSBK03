@@ -89,7 +89,7 @@
             controls.update();
             
             document.onkeydown = (e) => {
-                console.log(e.keyCode)
+                //console.log(e.keyCode)
                 if(e.keyCode === 39) //right
                     sphereCenter.setX(sphereCenter.getComponent(0)+0.1);
                 if(e.keyCode === 37) //left
@@ -283,12 +283,17 @@
                                       prevPos.getComponent(1)+prevVel.getComponent(1)*timestep+prevAcc.getComponent(1)*Math.pow(timestep,2)*0.5,
                                       prevPos.getComponent(2)+prevVel.getComponent(2)*timestep+prevAcc.getComponent(2)*Math.pow(timestep,2)*0.5);
                         
+                        //Collision with floor
+                        if(newPos.getComponent(1) <= 0) {
+                            newPos.setY(0);
+                        }
                         //Project colliding vertices onto the spheres surface
                         if(newPos.distanceTo(sphereCenter) <= obj.sphereRadius) {
                             //console.log("collision detected");
                             let collisionNormal = newPos.sub(sphereCenter).normalize().multiplyScalar(obj.sphereRadius).add(sphereCenter);
                             newPos.copy(collisionNormal);
                         }
+                        
                         planeVertices.setXYZ(i, newPos.getComponent(0), newPos.getComponent(1), newPos.getComponent(2));
                         // F_net = F_spring - F_damp - F_g + F_wind
                         acc.set((springForce.getComponent(0)-dampingForce.getComponent(0))/mass,
