@@ -21,6 +21,7 @@
                 this.windForce = 10;
                 this.springConstant = 25;
                 this.dampingConstant = 0.17;
+                this.sphereRadius = 8;
             };
             let obj = new object();
             let gui = new dat.GUI();
@@ -58,6 +59,7 @@
                 shearDampingConstant = dampingConstant/shearSpringLength; // N/m
                 bendDampingConstant = dampingConstant/bendSpringLength; // N/m
             });
+            let setRadius = gui.add(obj, 'sphereRadius', 0, 10);
             
             
             /***************      Three.js setup       ****************/
@@ -96,7 +98,7 @@
             geometry.translate(0,10,0);
             
             let sphereCenter = new THREE.Vector3(0,0,0);
-            let sphereRadius = 3;
+            
             //console.log(geometry.userData.velocity);
             /*
             let directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
@@ -269,10 +271,11 @@
                         //let newPosX = prevPos.getComponent(0)+prevVel.getComponent(0)*timestep+prevAcc.getComponent(0)*Math.pow(timestep,2)*0.5;
                         //let newPosY = prevPos.getComponent(1)+prevVel.getComponent(1)*timestep+prevAcc.getComponent(1)*Math.pow(timestep,2)*0.5;
                         //let newPosZ = prevPos.getComponent(2)+prevVel.getComponent(2)*timestep+prevAcc.getComponent(2)*Math.pow(timestep,2)*0.5;
-                        if(newPos.distanceTo(sphereCenter) <= sphereRadius) {
+                        
+                        //Project colliding vertices onto the spheres surface
+                        if(newPos.distanceTo(sphereCenter) <= obj.sphereRadius) {
                             console.log("collision detected");
-                            let collisionNormal = newPos.sub(sphereCenter).normalize().multiplyScalar(sphereRadius);
-                            
+                            let collisionNormal = newPos.sub(sphereCenter).normalize().multiplyScalar(obj.sphereRadius).add(sphereCenter);
                             newPos.copy(collisionNormal);
                         }
                         planeVertices.setXYZ(i, newPos.getComponent(0), newPos.getComponent(1), newPos.getComponent(2));
