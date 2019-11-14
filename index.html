@@ -21,7 +21,7 @@
                 this.windForce = 10;
                 this.springConstant = 25;
                 this.dampingConstant = 0.17;
-                this.sphereRadius = 8;
+                this.sphereRadius = 3;
             };
             let obj = new object();
             let gui = new dat.GUI();
@@ -88,6 +88,18 @@
             controls.enablePan = false;
             controls.update();
             
+            document.onkeydown = (e) => {
+                console.log(e.keyCode)
+                if(e.keyCode === 39) //right
+                    sphereCenter.setX(sphereCenter.getComponent(0)+0.1);
+                if(e.keyCode === 37) //left
+                    sphereCenter.setX(sphereCenter.getComponent(0)-0.1);
+                if(e.keyCode === 38) //up
+                    sphereCenter.setY(sphereCenter.getComponent(1)+0.1);
+                if(e.keyCode === 40) //down
+                    sphereCenter.setY(sphereCenter.getComponent(1)-0.1);
+            };
+            
             // Objects in scene
             const WIDTHSEGMENTS = 40;
             const HEIGHTSEGMENTS = 40;
@@ -100,6 +112,8 @@
             let sphereCenter = new THREE.Vector3(0,0,0);
             
             //console.log(geometry.userData.velocity);
+            var ambLight = new THREE.AmbientLight( 0x404040 ); // soft white light
+            scene.add( ambLight );
             /*
             let directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
             directionalLight.position.set( 0, 0, 10 );
@@ -268,13 +282,10 @@
                         let newPos = new THREE.Vector3(prevPos.getComponent(0)+prevVel.getComponent(0)*timestep+prevAcc.getComponent(0)*Math.pow(timestep,2)*0.5,
                                       prevPos.getComponent(1)+prevVel.getComponent(1)*timestep+prevAcc.getComponent(1)*Math.pow(timestep,2)*0.5,
                                       prevPos.getComponent(2)+prevVel.getComponent(2)*timestep+prevAcc.getComponent(2)*Math.pow(timestep,2)*0.5);
-                        //let newPosX = prevPos.getComponent(0)+prevVel.getComponent(0)*timestep+prevAcc.getComponent(0)*Math.pow(timestep,2)*0.5;
-                        //let newPosY = prevPos.getComponent(1)+prevVel.getComponent(1)*timestep+prevAcc.getComponent(1)*Math.pow(timestep,2)*0.5;
-                        //let newPosZ = prevPos.getComponent(2)+prevVel.getComponent(2)*timestep+prevAcc.getComponent(2)*Math.pow(timestep,2)*0.5;
                         
                         //Project colliding vertices onto the spheres surface
                         if(newPos.distanceTo(sphereCenter) <= obj.sphereRadius) {
-                            console.log("collision detected");
+                            //console.log("collision detected");
                             let collisionNormal = newPos.sub(sphereCenter).normalize().multiplyScalar(obj.sphereRadius).add(sphereCenter);
                             newPos.copy(collisionNormal);
                         }
