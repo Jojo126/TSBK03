@@ -25,13 +25,14 @@
             };
             let obj = new object();
             let gui = new dat.GUI();
-            let showWireframe = gui.add(obj, 'wireframe');
+            let f1 = gui.addFolder('Cloth appearance');
+            let showWireframe = f1.add(obj, 'wireframe');
             //Toggle wireframe on material
             showWireframe.onChange(() => {
                 material.needsUpdate = true;
                 material.wireframe = obj.wireframe;
             });
-            let showNormals = gui.add(obj, 'normals');
+            let showNormals = f1.add(obj, 'normals');
             showNormals.onChange(()=>{
                 if(obj.normals)
                 {
@@ -42,9 +43,8 @@
                     scene.remove(helper);
                 }
             });
-            let setWindForce = gui.add(obj, 'windForce', 0, 60); //only displayed as integer
-            //doesn't get updated during runtime?
-            let setSpringConst = gui.add(obj, 'springConstant', 0, 50);
+            let f2 = gui.addFolder('Cloth behavior');
+            let setSpringConst = f2.add(obj, 'springConstant', 0, 50);
             setSpringConst.onChange(()=>{
                 springConstant = obj.springConstant;
                 structuralSpringConstant = springConstant/structuralSpringLength; // N/m
@@ -52,13 +52,14 @@
                 bendSpringConstant = springConstant/bendSpringLength; // N/m
                 
             });
-            let setDampingConst = gui.add(obj, 'dampingConstant', 0, 1);
+            let setDampingConst = f2.add(obj, 'dampingConstant', 0, 1);
             setDampingConst.onChange(()=>{
                 dampingConstant = obj.dampingConstant;
                 structuralDampingConstant = dampingConstant/structuralSpringLength; // N/m
                 shearDampingConstant = dampingConstant/shearSpringLength; // N/m
                 bendDampingConstant = dampingConstant/bendSpringLength; // N/m
             });
+            let setWindForce = gui.add(obj, 'windForce', 0, 60); //only displayed as integer
             let setRadius = gui.add(obj, 'sphereRadius', 0, 10);
             
             
