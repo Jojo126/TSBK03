@@ -317,12 +317,30 @@
                             let collisionNormal = newPos.sub(sphereCenter).normalize().multiplyScalar(obj.sphereRadius).add(sphereCenter);
                             newPos.copy(collisionNormal);
                         }
-                        for(let j = 0; j < planeVertices.count; j++) {
+                        for(let j = i; j < planeVertices.count; j++) {
                             otherPos.set(planeVertices.getX(j), planeVertices.getY(j), planeVertices.getZ(j));
                             //console.log(newPos.distanceTo(otherPos));
-                            if(i != j && i != j-1 && i != j+1 && i != j-WIDTHSEGMENTS-1 && i != j+WIDTHSEGMENTS+1 && newPos.distanceTo(otherPos) < structuralSpringLength/2) {
-                                console.log("self-collision is happening!");
-                                console.log("between " + i + " and " + j);
+                            if(i != j && i != j-1 && i != j+1 && i != j-WIDTHSEGMENTS-1 && i != j+WIDTHSEGMENTS+1 && newPos.distanceTo(otherPos) < structuralSpringLength) {
+                                //console.log("self-collision is happening!");
+                                //console.log("between " + i + " and " + j);
+                                //console.log(otherPos);
+                                displacement = newPos.clone();//.sub(otherPos).muliplyScalar(0.5);
+                                displacement.sub(otherPos);
+                                
+                                radius = displacement.clone();
+                                radius.normalize();
+                                radius.multiplyScalar(structuralSpringLength/2);
+                                
+                                //displacement.multiplyScalar(-1);
+                                displacement.sub(radius);
+                                //displacement.addScalar(structuralSpringLength/2);
+                                displacement.multiplyScalar(0.5);
+                                //console.log(displacement);
+                                newPos.add(displacement);
+                                otherPos.sub(displacement);
+                                
+                                prevVel.set(0,0,0);
+                                prevAcc.set(0,0,0);
                             }
                         }
                         
