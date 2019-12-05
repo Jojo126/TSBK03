@@ -30,9 +30,10 @@
             function object() {
                 this.wireframe = false;
                 this.normals = false;
-                this.windForce = 10;
                 this.springConstant = 25;
                 this.dampingConstant = 0.17;
+                this.selfCollisions = false;
+                this.windForce = 10;
                 this.sphereRadius = 3;
             };
             let obj = new object();
@@ -71,6 +72,7 @@
                 shearDampingConstant = dampingConstant/shearSpringLength; // N/m
                 bendDampingConstant = dampingConstant/bendSpringLength; // N/m
             });
+            let selfCollEnabled = f2.add(obj, 'selfCollisions');
             let setWindForce = gui.add(obj, 'windForce', 0, 60); //only displayed as integer
             let setRadius = gui.add(obj, 'sphereRadius', 0, 10);
             
@@ -317,32 +319,36 @@
                             let collisionNormal = newPos.sub(sphereCenter).normalize().multiplyScalar(obj.sphereRadius).add(sphereCenter);
                             newPos.copy(collisionNormal);
                         }
-                        for(let j = i; j < planeVertices.count; j++) {
-                            otherPos.set(planeVertices.getX(j), planeVertices.getY(j), planeVertices.getZ(j));
-                            //console.log(newPos.distanceTo(otherPos));
-                            if(i != j && i != j-1 && i != j+1 && i != j-WIDTHSEGMENTS-1 && i != j+WIDTHSEGMENTS+1 && newPos.distanceTo(otherPos) < structuralSpringLength) {
-                                //console.log("self-collision is happening!");
-                                //console.log("between " + i + " and " + j);
-                                //console.log(otherPos);
-                                displacement = newPos.clone();//.sub(otherPos).muliplyScalar(0.5);
-                                displacement.sub(otherPos);
+                        //self-collisions
+                        if(selfCollEnabled) {
+                            for(let j = i; j < planeVertices.count; j++) {
+                                otherPos.set(planeVertices.getX(j), planeVertices.getY(j), planeVertices.getZ(j));
+                                //console.log(newPos.distanceTo(otherPos));
+                                if(i != j && i != j-1 && i != j+1 && i != j-WIDTHSEGMENTS-1 && i != j+WIDTHSEGMENTS+1 && newPos.distanceTo(otherPos) < structuralSpringLength) {
+                                    //console.log("self-collision is happening!");
+                                    //console.log("between " + i + " and " + j);
+                                    //console.log(otherPos);
+                                    displacement = newPos.clone();//.sub(otherPos).muliplyScalar(0.5);
+                                    displacement.sub(otherPos);
                                 
-                                radius = displacement.clone();
-                                radius.normalize();
-                                radius.multiplyScalar(structuralSpringLength/2);
+                                    radius = displacement.clone();
+                                    radius.normalize();
+                                    radius.multiplyScalar(structuralSpringLength/2);
                                 
-                                //displacement.multiplyScalar(-1);
-                                displacement.sub(radius);
-                                //displacement.addScalar(structuralSpringLength/2);
-                                displacement.multiplyScalar(0.5);
-                                //console.log(displacement);
-                                newPos.add(displacement);
-                                otherPos.sub(displacement);
+                                    //displacement.multiplyScalar(-1);
+                                    displacement.sub(radius);
+                                    //displacement.addScalar(structuralSpringLength/2);
+                                    displacement.multiplyScalar(0.5);
+                                    //console.log(displacement);
+                                    newPos.add(displacement);
+                                    otherPos.sub(displacement);
                                 
-                                prevVel.set(0,0,0);
-                                prevAcc.set(0,0,0);
+                                    prevVel.set(0,0,0);
+                                    prevAcc.set(0,0,0);
+                                }
                             }
                         }
+                        
                         
                         
                         planeVertices.setXYZ(i, newPos.getComponent(0), newPos.getComponent(1), newPos.getComponent(2));
