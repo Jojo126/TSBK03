@@ -32,7 +32,7 @@
                 this.normals = false;
                 this.springConstant = 25;
                 this.dampingConstant = 0.17;
-                this.selfCollisions = false;
+                this.selfCollisions = true;
                 this.windForce = 10;
                 this.sphereRadius = 3;
             };
@@ -96,7 +96,7 @@
             
             let camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
             let controls = new THREE.OrbitControls(camera, renderer.domElement);
-            camera.position.z = 6;
+            camera.position.z = -20;
             // limit orbitcontrols
             controls.minDistance = 1;
             controls.maxDistance = 40;
@@ -320,36 +320,39 @@
                             newPos.copy(collisionNormal);
                         }
                         //self-collisions
-                        if(selfCollEnabled) {
-                            for(let j = i; j < planeVertices.count; j++) {
+                        if(obj.selfCollisions) {
+                            for(let j = i+1; j < planeVertices.count; j++) {
                                 otherPos.set(planeVertices.getX(j), planeVertices.getY(j), planeVertices.getZ(j));
                                 //console.log(newPos.distanceTo(otherPos));
-                                if(i != j && i != j-1 && i != j+1 && i != j-WIDTHSEGMENTS-1 && i != j+WIDTHSEGMENTS+1 && newPos.distanceTo(otherPos) < structuralSpringLength) {
+                                if(i!=j && i != j-1 && i != j+1 && i != j-WIDTHSEGMENTS-1 && i != j+WIDTHSEGMENTS+1 && 
+                                   i != j-WIDTHSEGMENTS && i != j+WIDTHSEGMENTS && i != j-WIDTHSEGMENTS-2 && i != j+WIDTHSEGMENTS+2 && 
+                                   newPos.distanceTo(otherPos) < structuralSpringLength*1.6) {
                                     //console.log("self-collision is happening!");
                                     //console.log("between " + i + " and " + j);
                                     //console.log(otherPos);
-                                    displacement = newPos.clone();//.sub(otherPos).muliplyScalar(0.5);
+                                    displacement = newPos.clone();
                                     displacement.sub(otherPos);
                                 
                                     radius = displacement.clone();
                                     radius.normalize();
-                                    radius.multiplyScalar(structuralSpringLength/2);
+                                    radius.multiplyScalar(structuralSpringLength/1.5);
                                 
-                                    //displacement.multiplyScalar(-1);
                                     displacement.sub(radius);
-                                    //displacement.addScalar(structuralSpringLength/2);
-                                    displacement.multiplyScalar(0.5);
+                                    displacement.multiplyScalar(0.05);
                                     //console.log(displacement);
                                     newPos.add(displacement);
                                     otherPos.sub(displacement);
-                                
+                                    
+                                    //Update vertices from response
+                                    planeVertices.setXYZ(j, otherPos.getComponent(0), otherPos.getComponent(1), otherPos.getComponent(2));
+                                    geometry.userData.prevVelocity[i].set(0,0,0);
+                                    geometry.userData.prevAcceleration[i].set(0,0,0);                                    
+                                    
                                     prevVel.set(0,0,0);
                                     prevAcc.set(0,0,0);
                                 }
                             }
                         }
-                        
-                        
                         
                         planeVertices.setXYZ(i, newPos.getComponent(0), newPos.getComponent(1), newPos.getComponent(2));
                         // F_net = F_spring - F_damp - F_g + F_wind
