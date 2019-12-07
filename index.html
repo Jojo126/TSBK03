@@ -84,14 +84,9 @@
             let selfCollEnabled = f2.add(obj, 'selfCollisions');
             let setAttachment = f2.add(obj, 'attachment', ['2 corners', '4 corners', '2 points', '1 edge', '2 edges', '4 edges', 'no attachments']);
             setAttachment.onChange(() => {
-                //beräkna och sätt påverkade vertexar tillbaka till sin plats
                 if(obj.attachment === '2 corners') {
-                    //console.log('planeVertices before: ' + planeVertices.getX(0));
-                    //console.log('initPos before: ' + initPos.getX(0));
                     planeVertices.setXYZ(0, initPos.getX(0), initPos.getY(0), initPos.getZ(0));
-                    //console.log(initPos.getX(0));
                     planeVertices.setXYZ(WIDTHSEGMENTS, initPos.getX(WIDTHSEGMENTS), initPos.getY(WIDTHSEGMENTS), initPos.getZ(WIDTHSEGMENTS));
-                    //console.log('after: ' + planeVertices.getX(0));
                 } else if (obj.attachment === '4 corners') 
                 {
                     planeVertices.setXYZ(0, initPos.getX(0), initPos.getY(0), initPos.getZ(0));
@@ -108,7 +103,6 @@
                     for(i = 0; i <= WIDTHSEGMENTS; i++) {
                         planeVertices.setXYZ(i, initPos.getX(i), initPos.getY(i), initPos.getZ(i));
                     }
-                    //console.log(initPos);
                     for(i = (WIDTHSEGMENTS+1)*HEIGHTSEGMENTS; i <= planeVertices.count; i++) {
                         planeVertices.setXYZ(i, initPos.getX(i), initPos.getY(i), initPos.getZ(i));
                     }
