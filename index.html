@@ -11,8 +11,6 @@
         <script src="js/OrbitControls.js"></script>
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
 		<script>
-            //kunna ändra fästpunkter
-            //ändra kontroller för sfär
             //jobba på gpu
             //kunna byta till ringbuffergeom
             
@@ -82,7 +80,7 @@
                 bendDampingConstant = dampingConstant/bendSpringLength; // N/m
             });
             let selfCollEnabled = f2.add(obj, 'selfCollisions');
-            let setAttachment = f2.add(obj, 'attachment', ['2 corners', '4 corners', '2 points', '1 edge', '2 edges', '4 edges', 'no attachments']);
+            let setAttachment = f2.add(obj, 'attachment', ['2 corners', '4 corners', '2 points', '1 edge', '1 line', 'laundry', '2 edges', '4 edges', 'no attachments']);
             setAttachment.onChange(() => {
                 if(obj.attachment === '2 corners') {
                     planeVertices.setXYZ(0, initPos.getX(0), initPos.getY(0), initPos.getZ(0));
@@ -98,6 +96,21 @@
                     for(i = 0; i <= WIDTHSEGMENTS; i++) {
                         planeVertices.setXYZ(i, initPos.getX(i), initPos.getY(i), initPos.getZ(i));
                     }
+                } else if (obj.attachment === '1 line') 
+                {
+                    for(i = 0; i <= planeVertices.count; i++) {
+                        if (i % (HEIGHTSEGMENTS+1) === Math.ceil((HEIGHTSEGMENTS+1)/2)) {
+                            planeVertices.setXYZ(i, initPos.getX(i), initPos.getY(i), initPos.getZ(i));
+                        }
+                    }
+                } 
+                else if (obj.attachment === 'laundry') {
+                    for(i = 0; i <= planeVertices.count; i++) {
+                        if (i >= (Math.floor((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)/2)-Math.ceil(WIDTHSEGMENTS+1)/2) && i <= Math.floor((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)/2)+Math.ceil(WIDTHSEGMENTS+1)/2) {
+                            planeVertices.setXYZ(i, initPos.getX(i), initPos.getY(i), initPos.getZ(i));
+                        }
+                    }
+                    
                 } else if (obj.attachment === '2 edges') 
                 {
                     for(i = 0; i <= WIDTHSEGMENTS; i++) {
@@ -301,6 +314,10 @@
                     } else if (obj.attachment === '1 edge') 
                     {
                         condition = !( i <= WIDTHSEGMENTS );
+                    } else if (obj.attachment === '1 line') {
+                        condition = !(i % (HEIGHTSEGMENTS+1) === Math.ceil((HEIGHTSEGMENTS+1)/2));
+                    } else if (obj.attachment === 'laundry') {
+                        condition = !(i >= (Math.floor((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)/2)-Math.ceil(WIDTHSEGMENTS+1)/2) && i <= Math.floor((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)/2)+Math.ceil(WIDTHSEGMENTS+1)/2);
                     } else if (obj.attachment === '2 edges') 
                     {
                         condition = !( i <= WIDTHSEGMENTS || i >= (WIDTHSEGMENTS+1)*HEIGHTSEGMENTS);
@@ -314,7 +331,8 @@
                     else if (obj.attachment === 'no attachments') 
                     {
                         condition = true;
-                    }                        
+                    }
+                    
                     
                     if(condition) //Attached vertices
                     {
