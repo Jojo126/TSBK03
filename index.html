@@ -11,6 +11,12 @@
         <script src="js/OrbitControls.js"></script>
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
 		<script>
+            //kunna ändra fästpunkter
+            //ändra kontroller för sfär
+            //jobba på gpu
+            //kunna byta till ringbuffergeom
+            
+            
             let script = document.createElement('script');
             script.onload = function() {
                 let stats = new Stats();
@@ -65,7 +71,7 @@
                 bendSpringConstant = springConstant/bendSpringLength; // N/m
                 
             });
-            let setDampingConst = f2.add(obj, 'dampingConstant', 0, 1);
+            let setDampingConst = f2.add(obj, 'dampingConstant', 0, 0.2);
             setDampingConst.onChange(()=>{
                 dampingConstant = obj.dampingConstant;
                 structuralDampingConstant = dampingConstant/structuralSpringLength; // N/m
@@ -105,14 +111,18 @@
             
             document.onkeydown = (e) => {
                 //console.log(e.keyCode)
-                if(e.keyCode === 39) //right
+                if(e.keyCode === 37) //right
                     sphereCenter.setX(sphereCenter.getComponent(0)+0.1);
-                if(e.keyCode === 37) //left
+                if(e.keyCode === 39) //left
                     sphereCenter.setX(sphereCenter.getComponent(0)-0.1);
-                if(e.keyCode === 38) //up
+                if(e.keyCode === 222) //up
                     sphereCenter.setY(sphereCenter.getComponent(1)+0.1);
-                if(e.keyCode === 40) //down
+                if(e.keyCode === 189) //down
                     sphereCenter.setY(sphereCenter.getComponent(1)-0.1);
+                if(e.keyCode === 38) //in
+                    sphereCenter.setZ(sphereCenter.getComponent(2)+0.1);
+                if(e.keyCode === 40) //out
+                    sphereCenter.setZ(sphereCenter.getComponent(2)-0.1);
             };
             
             // Objects in scene
