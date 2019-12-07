@@ -153,7 +153,7 @@
 	// create a new mesh with sphere geometry -
 	// we will cover the sphereMaterial next!
 	var sphere = new THREE.Mesh(
-	   new THREE.Plane(radius*5, segments*5, rings*5),
+	   new THREE.Sphere(radius, segments, rings),
 	   shaderMaterial);
 	   
 	// now populate the array of attributes

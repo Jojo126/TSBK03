@@ -1,0 +1,109 @@
+<html>
+	<head>
+		<title>Quadtree</title>
+	</head>
+	<body>
+        <script src="js/three.js"></script>
+		<script>
+            //create array to work with
+            let rows = 41;
+            let columns = 41;
+            let counter = 0;
+            let array = [];
+            for (let i = 1; i <= rows; i++) {
+                for (let j = 1; j <= columns; j++) {
+                    //array.push(counter);
+                    array.push("first");
+                    array.push("second");
+                    array.push("third");
+                    counter++;
+                    //console.log(array);
+                }
+            }
+            console.log(array);
+            
+            /*
+            //weird ratio (not 1:1-ish)
+            let largestSide = width;
+            if(Math.max(width,height) === height) {
+               largestSide = height;
+            }
+            console.log(largestSide);
+            
+            let ratio = Math.floor(largestSide/Math.min(width,height));
+            console.log(ratio);
+            console.log(largestSide/ratio);
+            */
+            
+            let rowPivot, columnPivot, i;
+            
+            //divide array into subgroups (division done!)            
+            let divideGroup = (rows, columns, subArray) => {
+                rowPivot = Math.ceil(rows/2)*columns; //8
+                columnPivot = Math.ceil(columns/2); //2
+                
+                //console.log("rows: " + rows);
+                //console.log("cols: " + columns);
+                //console.log("subArray: " + subArray);
+                
+                //base-case
+                if (subArray.length <= 1) {
+                    return { vertices: subArray };
+                } 
+                else {
+                    let firstGroup = [];
+                    let secondGroup = [];
+                    let thirdGroup = [];
+                    let fourthGroup = [];
+                
+                    for(i = 0; i < subArray.length; i++) {
+                        //create for new subgroups
+                        //send correct array of vertices into groups
+                        //första 
+                        if(i < rowPivot && i % columns <= columnPivot-1) {
+                            firstGroup.push(subArray[i]);
+                            //console.log("första för: " + i);
+                        }
+                        //andra
+                        else if(i < rowPivot && i % columns > columnPivot-1) {
+                            secondGroup.push(subArray[i]);
+                            //console.log("andra för: " + i);
+                        }
+                        else if(i >= rowPivot && i % columns <= columnPivot-1) {
+                            thirdGroup.push(subArray[i]);
+                            //console.log("tredje för: " + i);
+                        } 
+                        else {
+                        fourthGroup.push(subArray[i]);
+                        //console.log("fjärde för: " + i);
+                        }
+                    }
+                    //console.log("firstgroup: " + firstGroup);
+                    //console.log("secondGroup: " + secondGroup);
+                    //console.log("thirdGroup: " + thirdGroup);
+                    //console.log("fourthGroup: " + fourthGroup);
+                    
+                    let firstObject = divideGroup(Math.ceil(rows/2), Math.ceil(columns/2), firstGroup);
+                    let secondObject = divideGroup(Math.ceil(rows/2), columns - Math.ceil(columns/2), secondGroup);
+                    let thirdObject = divideGroup(rows - Math.ceil(rows/2), Math.ceil(columns/2), thirdGroup);
+                    let fourthObject = divideGroup(rows - Math.ceil(rows/2), columns - Math.ceil(columns/2), fourthGroup);
+                
+                    return {
+                        vertices: subArray,
+                        firstQuadrant: firstObject,
+                        secondQuadrant: secondObject,
+                        thirdQuadrant: thirdObject,
+                        fourthQuadrant: fourthObject
+                    };
+                }
+            }
+            
+            let root = divideGroup(rows, columns, array);
+            console.log(root);
+            
+            //get leaf
+            //console.log(root.firstQuadrant.thirdQuadrant.vertices[0]);
+            
+        </script>
+    </body>
+</html>
