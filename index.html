@@ -32,6 +32,8 @@
             document.head.appendChild(script);
             
             /**********      dat.gui menu       ***********/
+            let initPos;
+            let planeVertices;
             
             function object() {
                 this.wireframe = false;
@@ -65,7 +67,7 @@
             });
             let f2 = gui.addFolder('Cloth behavior');
             let setSpringConst = f2.add(obj, 'springConstant', 0, 50);
-            setSpringConst.onChange(()=>{
+            setSpringConst.onChange(() => {
                 springConstant = obj.springConstant;
                 structuralSpringConstant = springConstant/structuralSpringLength; // N/m
                 shearSpringConstant = springConstant/shearSpringLength; // N/m
@@ -73,7 +75,7 @@
                 
             });
             let setDampingConst = f2.add(obj, 'dampingConstant', 0, 0.2);
-            setDampingConst.onChange(()=>{
+            setDampingConst.onChange(() => {
                 dampingConstant = obj.dampingConstant;
                 structuralDampingConstant = dampingConstant/structuralSpringLength; // N/m
                 shearDampingConstant = dampingConstant/shearSpringLength; // N/m
@@ -81,6 +83,48 @@
             });
             let selfCollEnabled = f2.add(obj, 'selfCollisions');
             let setAttachment = f2.add(obj, 'attachment', ['2 corners', '4 corners', '2 points', '1 edge', '2 edges', '4 edges', 'no attachments']);
+            setAttachment.onChange(() => {
+                //beräkna och sätt påverkade vertexar tillbaka till sin plats
+                if(obj.attachment === '2 corners') {
+                    //console.log('planeVertices before: ' + planeVertices.getX(0));
+                    //console.log('initPos before: ' + initPos.getX(0));
+                    planeVertices.setXYZ(0, initPos.getX(0), initPos.getY(0), initPos.getZ(0));
+                    //console.log(initPos.getX(0));
+                    planeVertices.setXYZ(WIDTHSEGMENTS, initPos.getX(WIDTHSEGMENTS), initPos.getY(WIDTHSEGMENTS), initPos.getZ(WIDTHSEGMENTS));
+                    //console.log('after: ' + planeVertices.getX(0));
+                } else if (obj.attachment === '4 corners') 
+                {
+                    planeVertices.setXYZ(0, initPos.getX(0), initPos.getY(0), initPos.getZ(0));
+                    planeVertices.setXYZ(WIDTHSEGMENTS, initPos.getX(WIDTHSEGMENTS), initPos.getY(WIDTHSEGMENTS), initPos.getZ(WIDTHSEGMENTS));
+                    planeVertices.setXYZ((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS), initPos.getX((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS)), initPos.getY((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS)), initPos.getZ((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS)));
+                    planeVertices.setXYZ((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)-1, initPos.getX((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)-1), initPos.getY((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)-1), initPos.getZ((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)-1));
+                } else if (obj.attachment === '1 edge') 
+                {
+                    for(i = 0; i <= WIDTHSEGMENTS; i++) {
+                        planeVertices.setXYZ(i, initPos.getX(i), initPos.getY(i), initPos.getZ(i));
+                    }
+                } else if (obj.attachment === '2 edges') 
+                {
+                    for(i = 0; i <= WIDTHSEGMENTS; i++) {
+                        planeVertices.setXYZ(i, initPos.getX(i), initPos.getY(i), initPos.getZ(i));
+                    }
+                    //console.log(initPos);
+                    for(i = (WIDTHSEGMENTS+1)*HEIGHTSEGMENTS; i <= planeVertices.count; i++) {
+                        planeVertices.setXYZ(i, initPos.getX(i), initPos.getY(i), initPos.getZ(i));
+                    }
+                } else if (obj.attachment === '4 edges') 
+                {
+                    for(i = 0; i <= planeVertices.count; i++) {
+                        if (( i <= WIDTHSEGMENTS || i%(WIDTHSEGMENTS+1) === 0 || (i-WIDTHSEGMENTS)%(WIDTHSEGMENTS+1) === 0 || i >= (WIDTHSEGMENTS+1)*HEIGHTSEGMENTS)) {
+                            planeVertices.setXYZ(i, initPos.getX(i), initPos.getY(i), initPos.getZ(i));
+                        }
+                    }
+                } else if (obj.attachment === '2 points')
+                {
+                    planeVertices.setXYZ(WIDTHSEGMENTS*HEIGHTSEGMENTS/2, initPos.getX(WIDTHSEGMENTS*HEIGHTSEGMENTS/2), initPos.getY(WIDTHSEGMENTS*HEIGHTSEGMENTS/2), initPos.getZ(WIDTHSEGMENTS*HEIGHTSEGMENTS/2));
+                    planeVertices.setXYZ(WIDTHSEGMENTS/1.25*HEIGHTSEGMENTS/2, initPos.getX(WIDTHSEGMENTS/1.25*HEIGHTSEGMENTS/2), initPos.getY(WIDTHSEGMENTS/1.25*HEIGHTSEGMENTS/2), initPos.getZ(WIDTHSEGMENTS/1.25*HEIGHTSEGMENTS/2));
+                }
+            });
             let setWindForce = gui.add(obj, 'windForce', 0, 60); //only displayed as integer
             let setRadius = gui.add(obj, 'sphereRadius', 0, 10);
             
@@ -186,7 +230,9 @@
             let bendDampingConstant = dampingConstant/bendSpringLength; // N/m
             
             // Init attribute vectors
-            let planeVertices = geometry.getAttribute('position');
+            planeVertices = geometry.getAttribute('position');
+            initPos = planeVertices.clone();
+            //console.log(initPos);
             geometry.userData.prevPosition = [];
             geometry.userData.velocity = [];
             geometry.userData.prevVelocity = [];
@@ -254,6 +300,7 @@
                     if (obj.attachment === '2 corners')
                     {
                         condition = !( i === 0 || i === WIDTHSEGMENTS );
+                        //console.log(initPos.array);
                     } else if (obj.attachment === '4 corners') 
                     {
                         condition = !( i === 0 || i === WIDTHSEGMENTS || i === ((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS)) || i === ((WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1))-1);
