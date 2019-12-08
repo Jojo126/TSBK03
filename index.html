@@ -44,6 +44,7 @@
                 this.sphereRadius = 3;
                 this.attachment = "2 corners";
                 this.drawRange = (WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)*3*2;
+                this.geometry = 'plane';
             };
             let obj = new object();
             let gui = new dat.GUI();
@@ -188,12 +189,17 @@
             
             const CLOTHWIDTH = 15;
             const CLOTHHEIGHT = 15;
-            let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
-            geometry.rotateX(Math.PI/2);
-            geometry.translate(0,10,0);
+            let planeGeometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
+            let ringGeometry = new THREE.RingBufferGeometry( CLOTHWIDTH-10, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
+            planeGeometry.rotateX(Math.PI/2);
+            planeGeometry.translate(0,10,0);
+            ringGeometry.rotateX(Math.PI/2);
+            ringGeometry.translate(0,10,0);
+            geometry = planeGeometry;
+            planeInitPos = planeGeometry.getAttribute('position').clone();
+            ringInitPos = ringGeometry.getAttribute('position').clone();
             
             let sphereCenter = new THREE.Vector3(0,0,0);
-            
             //console.log(geometry.userData.velocity);
             var ambLight = new THREE.AmbientLight( 0x404040 ); // soft white light
             scene.add( ambLight );
@@ -266,6 +272,9 @@
             //console.log(geometry.userData.velocity);
             //console.log(geometry.userData.prevVelocity);
             
+            
+            
+            
             // Init temp vectors
             let springForce = new THREE.Vector3(0,0,0); // N
             let dampingForce = new THREE.Vector3(0,0,0); // N
@@ -274,6 +283,34 @@
             let newPos = new THREE.Vector3(0,0,0);
             let otherPos = new THREE.Vector3(0,0,0);
             
+            let setGeometry = f1.add(obj, 'geometry', ['plane', 'ring']);
+            setGeometry.onChange(() => {
+                plane.geometry.dispose();
+                
+                if(obj.geometry === 'ring') {
+                    geometry = ringGeometry;
+                    initPos = ringInitPos;
+                } else if (obj.geometry === 'plane') {
+                    geometry = planeGeometry;
+                    initPos = planeInitPos;
+                }
+                plane.geometry = geometry;
+                geometry.userData.prevPosition = [];
+                geometry.userData.velocity = [];
+                geometry.userData.prevVelocity = [];
+                geometry.userData.acceleration = [];
+                geometry.userData.prevAcceleration = [];
+                planeVertices = geometry.getAttribute('position');
+                
+                for (let i = 0; i < planeVertices.count; i += 1) 
+                {
+                    geometry.userData.prevPosition.push(new THREE.Vector3(planeVertices.getX(i), planeVertices.getY(i), planeVertices.getZ(i)));
+                    geometry.userData.velocity.push(new THREE.Vector3(0,0,0));
+                    geometry.userData.prevVelocity.push(new THREE.Vector3(0,0,0));
+                    geometry.userData.acceleration.push(new THREE.Vector3(0,-gravity,0));
+                    geometry.userData.prevAcceleration.push(new THREE.Vector3(0,0,0));
+                }
+            });
             
             //console.log(planeVertices);
             // Render-loop
