@@ -13,7 +13,8 @@
 		<script>
             //jobba på gpu
             //kunna byta till ringbuffergeom
-            
+            const WIDTHSEGMENTS = 40;
+            const HEIGHTSEGMENTS = 40;
             
             let script = document.createElement('script');
             script.onload = function() {
@@ -42,6 +43,7 @@
                 this.windForce = 10;
                 this.sphereRadius = 3;
                 this.attachment = "2 corners";
+                this.drawRange = (WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)*3*2;
             };
             let obj = new object();
             let gui = new dat.GUI();
@@ -62,6 +64,11 @@
                 {
                     scene.remove(helper);
                 }
+            });
+            let changeDrawRange = f1.add(obj, 'drawRange', 0, (WIDTHSEGMENTS+1)*(HEIGHTSEGMENTS+1)*3*2);
+            //Toggle wireframe on material
+            changeDrawRange.onChange(() => {
+                geometry.setDrawRange(0, obj.drawRange);
             });
             let f2 = gui.addFolder('Cloth behavior');
             let setSpringConst = f2.add(obj, 'springConstant', 0, 50);
@@ -110,7 +117,6 @@
                             planeVertices.setXYZ(i, initPos.getX(i), initPos.getY(i), initPos.getZ(i));
                         }
                     }
-                    
                 } else if (obj.attachment === '2 edges') 
                 {
                     for(i = 0; i <= WIDTHSEGMENTS; i++) {
@@ -179,8 +185,7 @@
             };
             
             // Objects in scene
-            const WIDTHSEGMENTS = 40;
-            const HEIGHTSEGMENTS = 40;
+            
             const CLOTHWIDTH = 15;
             const CLOTHHEIGHT = 15;
             let geometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
