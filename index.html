@@ -51,8 +51,8 @@
             let showWireframe = f1.add(obj, 'wireframe');
             //Toggle wireframe on material
             showWireframe.onChange(() => {
-                material.needsUpdate = true;
                 material.wireframe = obj.wireframe;
+                material.wireframe.needsUpdate = true;
             });
             let showNormals = f1.add(obj, 'normals');
             showNormals.onChange(()=>{
