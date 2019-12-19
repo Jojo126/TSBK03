@@ -231,7 +231,7 @@
             let helper = new THREE.VertexNormalsHelper( plane, 0.5, 0x0000ff, 1 );
             
             /*****************************     Simulation      ***********************************/
-            let timestep = 1/120; // s/frame
+            let timestep = 1/110; // s/frame
             let time = 0;
             const gravity = 9.82*16; // m/s^2
             let springConstant = obj.springConstant;
@@ -477,7 +477,7 @@
                                     radius.multiplyScalar(structuralSpringLength/1.5);
                                 
                                     displacement.sub(radius);
-                                    displacement.multiplyScalar(0.05);
+                                    displacement.multiplyScalar(0.2);
                                     //console.log(displacement);
                                     newPos.add(displacement);
                                     otherPos.sub(displacement);
