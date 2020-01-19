@@ -3,41 +3,39 @@
 		<title>Quadtree</title>
 	</head>
 	<body>
-        <script src="js/three.js"></script>
+        <script src="../js/three.js"></script>
 		<script>
-            //create array to work with
-            let rows = 41;
-            let columns = 41;
+            let scene = new THREE.Scene();
+			let camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+			let renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+            const CLOTHWIDTH = 15;
+            const CLOTHHEIGHT = 15;
+            const WIDTHSEGMENTS = 41;
+            const HEIGHTSEGMENTS = 41;
+            let planeGeometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
+            //Information about vertices positions (only to be read)
+            let planeVertices = planeGeometry.getAttribute('position');
+            console.log(planeVertices);
+            
+            
+            /******************   Create hierarchy for vertices   ******************/
+            //create array of indices to use with getX, getY, getZ later
             let counter = 0;
-            let array = [];
-            for (let i = 1; i <= rows; i++) {
-                for (let j = 1; j <= columns; j++) {
-                    //array.push(counter);
-                    array.push("first");
-                    array.push("second");
-                    array.push("third");
-                    counter++;
-                    //console.log(array);
-                }
+            let indexArray = [];
+            for (let i = 1; i <= planeVertices.count; i++) {
+                indexArray.push(counter);
+                counter++;
+                //console.log(array);
             }
-            console.log(array);
+            console.log(indexArray);
             
-            /*
-            //weird ratio (not 1:1-ish)
-            let largestSide = width;
-            if(Math.max(width,height) === height) {
-               largestSide = height;
-            }
-            console.log(largestSide);
             
-            let ratio = Math.floor(largestSide/Math.min(width,height));
-            console.log(ratio);
-            console.log(largestSide/ratio);
-            */
-            
-            let rowPivot, columnPivot, i;
-            
-            //divide array into subgroups (division done!)            
+            //recusrively divide array into subgroups (only done once!)
+            let rowPivot, columnPivot, i;                        
             let divideGroup = (rows, columns, subArray) => {
                 rowPivot = Math.ceil(rows/2)*columns; //8
                 columnPivot = Math.ceil(columns/2); //2
@@ -98,11 +96,29 @@
                 }
             }
             
-            let root = divideGroup(rows, columns, array);
+            let root = divideGroup(WIDTHSEGMENTS+1, HEIGHTSEGMENTS+1, indexArray);
             console.log(root);
             
-            //get leaf
-            //console.log(root.firstQuadrant.thirdQuadrant.vertices[0]);
+            /**************************/
+            
+            
+            
+            let material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+			let cube = new THREE.Mesh( planeGeometry, material );
+			scene.add( cube );
+
+			camera.position.z = 5;
+
+			let animate = function () {
+				requestAnimationFrame( animate );
+
+				renderer.render( scene, camera );
+			};
+
+			animate();
+            
+            //get vertex in group/leaf
+            console.log(root.firstQuadrant.thirdQuadrant.vertices[0]);            
             
         </script>
     </body>
