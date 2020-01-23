@@ -34,7 +34,7 @@
             //console.log(indexArray);
             
             
-            //recusrively divide array into subgroups (only done once!)
+            //recursively divide array into subgroups (only done once!)
             let rowPivot, columnPivot, i;                        
             let divideGroup = (rows, columns, subArray) => {
                 rowPivot = Math.ceil(rows/2)*columns; //8
@@ -104,7 +104,10 @@
             
             
             /************************** compute bounding spheres *****************************/
-            let computeBoundingSphere = (indexList) => {
+            // Algorithm from:
+            // https://www.researchgate.net/publication/242453691_An_Efficient_Bounding_Sphere
+            
+            let computeBoundingSphere = (indexList, vertexRadius) => {
                 
                 // loopa genom alla vertexar i grupp
                 // hitta tre par vertexar för varje dimension
@@ -167,6 +170,10 @@
                         console.log("Updated sphere center to: (" + avrgPosX + ", " + avrgPosY + ", " + avrgPosZ + ")");
                     }
                 }
+                //add radius of vertices own bounding spheres (bounding sphere should include all sub-bounding spheres)
+                radius += vertexRadius;
+                console.log('final radii: ' + radius);
+                
                 /*
                 // Checks if any vertex is not covered by bounding sphere after creation and adjustments
                 for (let j = 0; j < indexArray.length; j++) {
@@ -177,8 +184,9 @@
                 }*/
             }
             
-            computeBoundingSphere([0,1,2,3,4,5,6,7,8,9,41,1000,1600]);
+            computeBoundingSphere([0,1,2,3,4,5,6,7,8,9,41,1000,1600], 3);
             //computeBoundingSphere(indexArray);
+            
             /*******************************************************/
             
             
