@@ -104,71 +104,81 @@
             
             
             /************************** compute bounding spheres *****************************/
-            
-            // loopa genom alla vertexar i grupp
-            // hitta tre par vertexar för varje dimension
-            let minX=0, maxX=0, minY=0, maxY=0, minZ=0, maxZ=0, averagePos = new THREE.Vector3(0,0,0);
-            for (let i = 0; i < indexArray.length; i++) {
-                if(planeVertices.getX(minX) > planeVertices.getX(i))
-                    minX = i;
-                if(planeVertices.getX(maxX) < planeVertices.getX(i))
-                    maxX = i;
-                if(planeVertices.getY(minY) > planeVertices.getY(i))
-                    minY = i;
-                if(planeVertices.getY(maxY) < planeVertices.getY(i))
-                    maxY = i;
-                if(planeVertices.getZ(minZ) > planeVertices.getZ(i))
-                    minZ = i;
-                if(planeVertices.getZ(maxZ) < planeVertices.getZ(i))
-                    maxZ = i;
+            let computeBoundingSphere = (indexList) => {
                 
-                averagePos.add(new THREE.Vector3(planeVertices.getX(i),planeVertices.getY(i),planeVertices.getZ(i)));
-                //console.log(averagePos);
-            }
-            // The three resulting coordinate pairs for each axis
-            //console.log("X-coords: " + planeVertices.getX(minX) + ", " + planeVertices.getX(maxX));
-            //console.log("Y-coords: " + planeVertices.getY(minY) + ", " + planeVertices.getY(maxY));
-            //console.log("Z-coords: " + planeVertices.getZ(minZ) + ", " + planeVertices.getZ(maxZ));
-            
-            let xDist = planeVertices.getX(maxX) - planeVertices.getX(minX);
-            let yDist = planeVertices.getY(maxY) - planeVertices.getY(minY);
-            let zDist = planeVertices.getZ(maxZ) - planeVertices.getZ(minZ);
-            let biggestDist = Math.max(xDist, yDist, zDist);
-            //console.log("biggets distance in axis" + biggestDist);
-            let radius = biggestDist/2;
-            //averagePos = bounding spheres center
-            averagePos.divideScalar(indexArray.length);
-            //console.log(averagePos);
-            
-            // loop through again to find non-included vertices
-            for (let j = 0; j < indexArray.length; j++) {
-                let distPointToSphereSquared = (planeVertices.getX(j)-averagePos.x)*(planeVertices.getX(j)-averagePos.x) + 
-                   (planeVertices.getY(j)-averagePos.y)*(planeVertices.getY(j)-averagePos.y) + 
-                   (planeVertices.getZ(j)-averagePos.z)*(planeVertices.getZ(j)-averagePos.z);
-                
-                if(distPointToSphereSquared > radius*radius)
-                {
-                    let distPointToSphere = Math.sqrt(distPointToSphereSquared);
-                    let avrgPosX = (radius*averagePos.x +(distPointToSphere-radius)*planeVertices.getX(j))/distPointToSphere,
-                    avrgPosY = (radius*averagePos.y +(distPointToSphere-radius)*planeVertices.getY(j))/distPointToSphere,
-                    avrgPosZ = (radius*averagePos.z +(distPointToSphere-radius)*planeVertices.getZ(j))/distPointToSphere;
+                // loopa genom alla vertexar i grupp
+                // hitta tre par vertexar för varje dimension
+                let minX=0, maxX=0, minY=0, maxY=0, minZ=0, maxZ=0, averagePos = new THREE.Vector3(0,0,0);
+                for (let i = 0; i < indexList.length; i++) {
                     
-                    radius = (radius + distPointToSphere)/2;
-                    averagePos.set(avrgPosX, avrgPosY, avrgPosZ);
-                    //console.log("Updated radius to: " + radius);
-                    //console.log("Updated sphere center to: (" + avrgPosX + " ," + avrgPosY + " ," + avrgPosZ + ")");
+                    // translate from listed indices to planes indices
+                    let planeIndex = indexList[i];
+                    
+                    if(planeVertices.getX(minX) > planeVertices.getX(planeIndex))
+                        minX = planeIndex;
+                    if(planeVertices.getX(maxX) < planeVertices.getX(planeIndex))
+                        maxX = planeIndex;
+                    if(planeVertices.getY(minY) > planeVertices.getY(planeIndex))
+                        minY = planeIndex;
+                    if(planeVertices.getY(maxY) < planeVertices.getY(planeIndex))
+                        maxY = planeIndex;
+                    if(planeVertices.getZ(minZ) > planeVertices.getZ(planeIndex))
+                        minZ = planeIndex;
+                    if(planeVertices.getZ(maxZ) < planeVertices.getZ(planeIndex))
+                        maxZ = planeIndex;
+                
+                    averagePos.add(new THREE.Vector3(planeVertices.getX(planeIndex),planeVertices.getY(planeIndex),planeVertices.getZ(planeIndex)));
+                    //console.log(averagePos);
                 }
+                // Three coordinate pairs for each axis with longest distance
+                //console.log("X-coords: " + planeVertices.getX(minX) + ", " + planeVertices.getX(maxX));
+                //console.log("Y-coords: " + planeVertices.getY(minY) + ", " + planeVertices.getY(maxY));
+                //console.log("Z-coords: " + planeVertices.getZ(minZ) + ", " + planeVertices.getZ(maxZ));
+            
+                let xDist = planeVertices.getX(maxX) - planeVertices.getX(minX);
+                let yDist = planeVertices.getY(maxY) - planeVertices.getY(minY);
+                let zDist = planeVertices.getZ(maxZ) - planeVertices.getZ(minZ);
+                let biggestDist = Math.max(xDist, yDist, zDist);
+                //console.log("biggets distance in axis" + biggestDist);
+                let radius = biggestDist/2;
+                //averagePos = bounding spheres center
+                averagePos.divideScalar(indexArray.length);
+                //console.log(averagePos);
+            
+                // loop through again to find non-included vertices
+                for (let i = 0; i < indexList.length; i++) {
+                    // translate listed indices to planes indices
+                    let planeIndex = indexList[i];
+                    
+                    let distPointToSphereSquared = (planeVertices.getX(planeIndex)-averagePos.x)*(planeVertices.getX(planeIndex)-averagePos.x) + 
+                                                    (planeVertices.getY(planeIndex)-averagePos.y)*(planeVertices.getY(planeIndex)-averagePos.y) + 
+                                                    (planeVertices.getZ(planeIndex)-averagePos.z)*(planeVertices.getZ(planeIndex)-averagePos.z);
+                
+                    if(distPointToSphereSquared > radius*radius)
+                    {
+                        let distPointToSphere = Math.sqrt(distPointToSphereSquared);
+                        let avrgPosX = (radius*averagePos.x +(distPointToSphere-radius)*planeVertices.getX(planeIndex))/distPointToSphere,
+                        avrgPosY = (radius*averagePos.y +(distPointToSphere-radius)*planeVertices.getY(planeIndex))/distPointToSphere,
+                        avrgPosZ = (radius*averagePos.z +(distPointToSphere-radius)*planeVertices.getZ(planeIndex))/distPointToSphere;
+                    
+                        radius = (radius + distPointToSphere)/2;
+                        averagePos.set(avrgPosX, avrgPosY, avrgPosZ);
+                        console.log("Updated radius to: " + radius);
+                        console.log("Updated sphere center to: (" + avrgPosX + ", " + avrgPosY + ", " + avrgPosZ + ")");
+                    }
+                }
+                /*
+                // Checks if any vertex is not covered by bounding sphere after creation and adjustments
+                for (let j = 0; j < indexArray.length; j++) {
+                    if((planeVertices.getX(j)-averagePos.x)*(planeVertices.getX(j)-averagePos.x) + 
+                        (planeVertices.getY(j)-averagePos.y)*(planeVertices.getY(j)-averagePos.y) + 
+                        (planeVertices.getZ(j)-averagePos.z)*(planeVertices.getZ(j)-averagePos.z) > radius*radius)
+                        console.log("found vertex " + j + " outside of bounding sphere!");                    
+                }*/
             }
-            /*
-            // Checks if any vertex is not covered by bounding sphere after creation and adjustments
-            for (let j = 0; j < indexArray.length; j++) {
-                if((planeVertices.getX(j)-averagePos.x)*(planeVertices.getX(j)-averagePos.x) + 
-                   (planeVertices.getY(j)-averagePos.y)*(planeVertices.getY(j)-averagePos.y) + 
-                   (planeVertices.getZ(j)-averagePos.z)*(planeVertices.getZ(j)-averagePos.z) > radius*radius)
-                {
-                    console.log("found vertex " + j + " outside of bounding sphere!");
-                }
-            }*/
+            
+            computeBoundingSphere([0,1,2,3,4,5,6,7,8,9,41,1000,1600]);
+            //computeBoundingSphere(indexArray);
             /*******************************************************/
             
             
