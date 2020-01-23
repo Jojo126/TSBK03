@@ -12,79 +12,53 @@
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			document.body.appendChild( renderer.domElement );
 
-            const CLOTHWIDTH = 15;
-            const CLOTHHEIGHT = 15;
-            const WIDTHSEGMENTS = 41;
-            const HEIGHTSEGMENTS = 41;
+            const CLOTHWIDTH = 15, CLOTHHEIGHT = 15, 
+                  WIDTHSEGMENTS = 41, HEIGHTSEGMENTS = 41;
             let planeGeometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
-            //Information about vertices positions (only to be read)
+            // Information about vertices positions
             let planeVertices = planeGeometry.getAttribute('position');
-            //console.log(planeVertices);
             
             
             /******************   Create hierarchy for vertices   ******************/
-            //create array of indices to use with getX, getY, getZ later
-            let counter = 0;
-            let indexArray = [];
+            // Create array of indices to use with getX, getY, getZ later
+            let counter = 0, indexArray = [];
             for (let i = 1; i <= planeVertices.count; i++) {
                 indexArray.push(counter);
                 counter++;
-                //console.log(array);
             }
-            //console.log(indexArray);
             
-            
-            //recursively divide array into subgroups (only done once!)
+            // Recursively divide array into subgroups (only done once!)
             let rowPivot, columnPivot, i;                        
             let divideGroup = (rows, columns, subArray) => {
-                rowPivot = Math.ceil(rows/2)*columns; //8
-                columnPivot = Math.ceil(columns/2); //2
+                rowPivot = Math.ceil(rows/2)*columns;
+                columnPivot = Math.ceil(columns/2);
                 
-                //console.log("rows: " + rows);
-                //console.log("cols: " + columns);
-                //console.log("subArray: " + subArray);
-                
-                //base-case
-                if (subArray.length <= 1) {
+                // Base-case
+                if (subArray.length <= 1)
                     return { vertices: subArray };
-                } 
                 else {
-                    let firstGroup = [];
-                    let secondGroup = [];
-                    let thirdGroup = [];
-                    let fourthGroup = [];
+                    let firstGroup = [], 
+                        secondGroup = [],
+                        thirdGroup = [],
+                        fourthGroup = [];
                 
                     for(i = 0; i < subArray.length; i++) {
-                        //create for new subgroups
-                        //send correct array of vertices into groups
-                        //första 
-                        if(i < rowPivot && i % columns <= columnPivot-1) {
+                        // Create four new subgroups
+                        // Send correct array of vertices into each group
+                        if(i < rowPivot && i % columns <= columnPivot-1)
                             firstGroup.push(subArray[i]);
-                            //console.log("första för: " + i);
-                        }
-                        //andra
-                        else if(i < rowPivot && i % columns > columnPivot-1) {
+                        else if(i < rowPivot && i % columns > columnPivot-1)
                             secondGroup.push(subArray[i]);
-                            //console.log("andra för: " + i);
-                        }
-                        else if(i >= rowPivot && i % columns <= columnPivot-1) {
+                        else if(i >= rowPivot && i % columns <= columnPivot-1)
                             thirdGroup.push(subArray[i]);
-                            //console.log("tredje för: " + i);
-                        } 
-                        else {
-                        fourthGroup.push(subArray[i]);
-                        //console.log("fjärde för: " + i);
-                        }
+                        else
+                            fourthGroup.push(subArray[i]);
                     }
-                    //console.log("firstgroup: " + firstGroup);
-                    //console.log("secondGroup: " + secondGroup);
-                    //console.log("thirdGroup: " + thirdGroup);
-                    //console.log("fourthGroup: " + fourthGroup);
                     
-                    let firstObject = divideGroup(Math.ceil(rows/2), Math.ceil(columns/2), firstGroup);
-                    let secondObject = divideGroup(Math.ceil(rows/2), columns - Math.ceil(columns/2), secondGroup);
-                    let thirdObject = divideGroup(rows - Math.ceil(rows/2), Math.ceil(columns/2), thirdGroup);
-                    let fourthObject = divideGroup(rows - Math.ceil(rows/2), columns - Math.ceil(columns/2), fourthGroup);
+                    let firstObject = divideGroup(Math.ceil(rows/2), Math.ceil(columns/2), firstGroup),
+                        secondObject = divideGroup(Math.ceil(rows/2), columns - Math.ceil(columns/2), secondGroup),
+                        thirdObject = divideGroup(rows - Math.ceil(rows/2), Math.ceil(columns/2), thirdGroup),
+                        fourthObject = divideGroup(rows - Math.ceil(rows/2), columns - Math.ceil(columns/2), fourthGroup);
                 
                     return {
                         vertices: subArray,
@@ -97,9 +71,8 @@
             }
             
             let root = divideGroup(WIDTHSEGMENTS+1, HEIGHTSEGMENTS+1, indexArray);
-            //console.log(root);
             
-            /**************************/
+            /*********************************************************************************/
             
             
             
@@ -109,86 +82,122 @@
             
             let computeBoundingSphere = (indexList, vertexRadius) => {
                 
-                // loopa genom alla vertexar i grupp
-                // hitta tre par vertexar för varje dimension
-                let minX=0, maxX=0, minY=0, maxY=0, minZ=0, maxZ=0, averagePos = new THREE.Vector3(0,0,0);
+                if(indexList.length === 1)
+                   return { sphereCenter: new THREE.Vector3(planeVertices.getX(indexList[0]), planeVertices.getY(indexList[0]), planeVertices.getZ(indexList[0])), sphereRadius: vertexRadius };
+                
+                // Find one vertex pair with largest distance for every axis
+                let minX=0, maxX=0, minY=0, maxY=0, minZ=0, maxZ=0, 
+                    averagePos = new THREE.Vector3(0,0,0);
+                
                 for (let i = 0; i < indexList.length; i++) {
+                    // Translate from listed indices to planes vertex indices
+                    let planeIndex = indexList[i],
+                        planeVertX = planeVertices.getX(planeIndex),
+                        planeVertY = planeVertices.getY(planeIndex),
+                        planeVertZ = planeVertices.getZ(planeIndex);
                     
-                    // translate from listed indices to planes indices
-                    let planeIndex = indexList[i];
-                    
-                    if(planeVertices.getX(minX) > planeVertices.getX(planeIndex))
+                    if(planeVertices.getX(minX) > planeVertX)
                         minX = planeIndex;
-                    if(planeVertices.getX(maxX) < planeVertices.getX(planeIndex))
+                    else(planeVertices.getX(maxX) < planeVertX)
                         maxX = planeIndex;
-                    if(planeVertices.getY(minY) > planeVertices.getY(planeIndex))
+                    if(planeVertices.getY(minY) > planeVertY)
                         minY = planeIndex;
-                    if(planeVertices.getY(maxY) < planeVertices.getY(planeIndex))
+                    else(planeVertices.getY(maxY) < planeVertY)
                         maxY = planeIndex;
-                    if(planeVertices.getZ(minZ) > planeVertices.getZ(planeIndex))
+                    if(planeVertices.getZ(minZ) > planeVertZ)
                         minZ = planeIndex;
-                    if(planeVertices.getZ(maxZ) < planeVertices.getZ(planeIndex))
+                    else(planeVertices.getZ(maxZ) < planeVertZ)
                         maxZ = planeIndex;
                 
-                    averagePos.add(new THREE.Vector3(planeVertices.getX(planeIndex),planeVertices.getY(planeIndex),planeVertices.getZ(planeIndex)));
-                    //console.log(averagePos);
+                    averagePos.add(new THREE.Vector3(planeVertX, planeVertY , planeVertZ));
                 }
                 // Three coordinate pairs for each axis with longest distance
                 //console.log("X-coords: " + planeVertices.getX(minX) + ", " + planeVertices.getX(maxX));
                 //console.log("Y-coords: " + planeVertices.getY(minY) + ", " + planeVertices.getY(maxY));
                 //console.log("Z-coords: " + planeVertices.getZ(minZ) + ", " + planeVertices.getZ(maxZ));
             
-                let xDist = planeVertices.getX(maxX) - planeVertices.getX(minX);
-                let yDist = planeVertices.getY(maxY) - planeVertices.getY(minY);
-                let zDist = planeVertices.getZ(maxZ) - planeVertices.getZ(minZ);
-                let biggestDist = Math.max(xDist, yDist, zDist);
-                //console.log("biggets distance in axis" + biggestDist);
-                let radius = biggestDist/2;
-                //averagePos = bounding spheres center
-                averagePos.divideScalar(indexArray.length);
-                //console.log(averagePos);
-            
-                // loop through again to find non-included vertices
-                for (let i = 0; i < indexList.length; i++) {
-                    // translate listed indices to planes indices
-                    let planeIndex = indexList[i];
-                    
-                    let distPointToSphereSquared = (planeVertices.getX(planeIndex)-averagePos.x)*(planeVertices.getX(planeIndex)-averagePos.x) + 
-                                                    (planeVertices.getY(planeIndex)-averagePos.y)*(planeVertices.getY(planeIndex)-averagePos.y) + 
-                                                    (planeVertices.getZ(planeIndex)-averagePos.z)*(planeVertices.getZ(planeIndex)-averagePos.z);
+                let xDist = planeVertices.getX(maxX) - planeVertices.getX(minX),
+                    yDist = planeVertices.getY(maxY) - planeVertices.getY(minY),
+                    zDist = planeVertices.getZ(maxZ) - planeVertices.getZ(minZ),
+                    biggestDist = Math.max(xDist, yDist, zDist);
                 
+                let radius = biggestDist/2;
+                // AveragePos = bounding spheres center
+                averagePos.divideScalar(indexArray.length);
+            
+                // Loop through again to find non-included vertices
+                for (let i = 0; i < indexList.length; i++) {
+                    
+                    let planeVertX = planeVertices.getX(indexList[i]),
+                        planeVertY = planeVertices.getY(indexList[i]),
+                        planeVertZ = planeVertices.getZ(indexList[i]),
+                        distPointToSphereSquared = (planeVertX-averagePos.x)*(planeVertX-averagePos.x) + 
+                                                   (planeVertY-averagePos.y)*(planeVertY-averagePos.y) + 
+                                                   (planeVertZ-averagePos.z)*(planeVertZ-averagePos.z);
+                
+                    // If vertex not inside bounding-sphere,
+                    // adjust radius and position of the sphere
                     if(distPointToSphereSquared > radius*radius)
                     {
-                        let distPointToSphere = Math.sqrt(distPointToSphereSquared);
-                        let avrgPosX = (radius*averagePos.x +(distPointToSphere-radius)*planeVertices.getX(planeIndex))/distPointToSphere,
-                        avrgPosY = (radius*averagePos.y +(distPointToSphere-radius)*planeVertices.getY(planeIndex))/distPointToSphere,
-                        avrgPosZ = (radius*averagePos.z +(distPointToSphere-radius)*planeVertices.getZ(planeIndex))/distPointToSphere;
+                        let distPointToSphere = Math.sqrt(distPointToSphereSquared),
+                            avrgPosX = (radius*averagePos.x +(distPointToSphere-radius)*planeVertX/distPointToSphere),
+                            avrgPosY = (radius*averagePos.y +(distPointToSphere-radius)*planeVertY/distPointToSphere),
+                            avrgPosZ = (radius*averagePos.z +(distPointToSphere-radius)*planeVertZ/distPointToSphere);
                     
                         radius = (radius + distPointToSphere)/2;
                         averagePos.set(avrgPosX, avrgPosY, avrgPosZ);
-                        console.log("Updated radius to: " + radius);
-                        console.log("Updated sphere center to: (" + avrgPosX + ", " + avrgPosY + ", " + avrgPosZ + ")");
                     }
                 }
-                //add radius of vertices own bounding spheres (bounding sphere should include all sub-bounding spheres)
+                // Add radius of vertices own bounding-spheres (bounding-sphere should include all "sub-bounding spheres")
                 radius += vertexRadius;
-                console.log('final radii: ' + radius);
                 
-                /*
-                // Checks if any vertex is not covered by bounding sphere after creation and adjustments
-                for (let j = 0; j < indexArray.length; j++) {
-                    if((planeVertices.getX(j)-averagePos.x)*(planeVertices.getX(j)-averagePos.x) + 
-                        (planeVertices.getY(j)-averagePos.y)*(planeVertices.getY(j)-averagePos.y) + 
-                        (planeVertices.getZ(j)-averagePos.z)*(planeVertices.getZ(j)-averagePos.z) > radius*radius)
-                        console.log("found vertex " + j + " outside of bounding sphere!");                    
-                }*/
+                return { sphereCenter: averagePos, sphereRadius: radius};
             }
             
-            computeBoundingSphere([0,1,2,3,4,5,6,7,8,9,41,1000,1600], 3);
+            //console.log(computeBoundingSphere([803], 1.5));
+            //console.log(computeBoundingSphere([0,1,2,3,4,5,6,7,8,9,41,1000,1600], 3));
             //computeBoundingSphere(indexArray);
             
             /*******************************************************/
             
+            /************************** self-collisions recursive function *******************************/
+            
+            let checkSelfCollision = (vertexIndex, vertexRadius, subGroup) => {
+            
+                // Generate subgroups bounding-sphere
+                let boundingSphere = computeBoundingSphere(subGroup.vertices, vertexRadius);
+                
+                // Check if collision
+                if (subGroup.vertices.length != 0 && new THREE.Vector3(planeVertices.getX(vertexIndex), planeVertices.getY(vertexIndex), planeVertices.getZ(vertexIndex)).distanceTo(boundingSphere.sphereCenter) < boundingSphere.sphereRadius) {
+                    
+                    // If reached leaf node
+                    if(subGroup.vertices.length === 1)
+                    {
+                        // If itself or neighbouring vertex
+                        if( vertexIndex === subGroup.vertices[0] || 
+                            vertexIndex === subGroup.vertices[0]-1               || vertexIndex === subGroup.vertices[0]+1 || 
+                            vertexIndex === subGroup.vertices[0]-WIDTHSEGMENTS-1 || vertexIndex === subGroup.vertices[0]+WIDTHSEGMENTS+1 || 
+                            vertexIndex === subGroup.vertices[0]-WIDTHSEGMENTS   || vertexIndex === subGroup.vertices[0]+WIDTHSEGMENTS || 
+                            vertexIndex === subGroup.vertices[0]-WIDTHSEGMENTS-2 || vertexIndex === subGroup.vertices[0]+WIDTHSEGMENTS+2) 
+                        {
+                            return;
+                        }
+                        
+                        // Create response from collision
+                        console.log("collision happening between: " + vertexIndex + " and " + subGroup.vertices[0]);
+                    }
+                    else {
+                        // Go down one level in tree and check again
+                        checkSelfCollision(vertexIndex, vertexRadius, subGroup.firstQuadrant);
+                        checkSelfCollision(vertexIndex, vertexRadius, subGroup.secondQuadrant);
+                        checkSelfCollision(vertexIndex, vertexRadius, subGroup.thirdQuadrant);
+                        checkSelfCollision(vertexIndex, vertexRadius, subGroup.fourthQuadrant);
+                    }
+                }
+            }
+            
+            /*********************************************************/
+                        
             
             let material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
 			let cube = new THREE.Mesh( planeGeometry, material );
@@ -201,14 +210,21 @@
                 
                 cube.rotation.x += 0.01;
                 cube.rotation.y += 0.01;
+                
+                // Check self-collisions
+                for (let i = 0; i < indexArray.length; i++)
+                {
+                    //computeBoundingSphere(indexArray, 0.5);
+                    checkSelfCollision(i, 0.1, root.firstQuadrant);
+                    checkSelfCollision(i, 0.1, root.secondQuadrant);
+                    checkSelfCollision(i, 0.1, root.thirdQuadrant);
+                    checkSelfCollision(i, 0.1, root.fourthQuadrant); // verkar bara vara beroende av radien på denna....
+                }
 
 				renderer.render( scene, camera );
 			};
 
-			animate();
-            
-            //get vertex in group/leaf
-            //console.log(root.firstQuadrant.thirdQuadrant.vertices[0]);            
+			animate();       
             
         </script>
     </body>
