@@ -5,8 +5,8 @@
 	<body>
         <script src="../js/three.js"></script>
 		<script>
-            let scene = new THREE.Scene();
-			let camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+            let scene = new THREE.Scene(),
+                camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
 
 			let renderer = new THREE.WebGLRenderer();
 			renderer.setSize( window.innerWidth, window.innerHeight );
@@ -14,9 +14,9 @@
 
             const CLOTHWIDTH = 15, CLOTHHEIGHT = 15, 
                   WIDTHSEGMENTS = 41, HEIGHTSEGMENTS = 41;
-            let planeGeometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS );
-            // Information about vertices positions
-            let planeVertices = planeGeometry.getAttribute('position');
+            let planeGeometry = new THREE.PlaneBufferGeometry( CLOTHWIDTH, CLOTHHEIGHT, WIDTHSEGMENTS, HEIGHTSEGMENTS ),
+                // Information about vertices positions
+                planeVertices = planeGeometry.getAttribute('position');
             
             
             /******************   Create hierarchy for vertices   ******************/
@@ -79,7 +79,7 @@
             /************************** compute bounding spheres *****************************/
             // Algorithm from:
             // https://www.researchgate.net/publication/242453691_An_Efficient_Bounding_Sphere
-            
+            // uses planeVertices
             let computeBoundingSphere = (indexList, vertexRadius) => {
                 
                 if(indexList.length === 1)
@@ -89,9 +89,9 @@
                 let minX=0, maxX=0, minY=0, maxY=0, minZ=0, maxZ=0, 
                     averagePos = new THREE.Vector3(0,0,0);
                 
-                for (let i = 0; i < indexList.length; i++) {
+                for (let j = 0; j < indexList.length; j++) {
                     // Translate from listed indices to planes vertex indices
-                    let planeIndex = indexList[i],
+                    let planeIndex = indexList[j],
                         planeVertX = planeVertices.getX(planeIndex),
                         planeVertY = planeVertices.getY(planeIndex),
                         planeVertZ = planeVertices.getZ(planeIndex);
@@ -119,18 +119,18 @@
                 let xDist = planeVertices.getX(maxX) - planeVertices.getX(minX),
                     yDist = planeVertices.getY(maxY) - planeVertices.getY(minY),
                     zDist = planeVertices.getZ(maxZ) - planeVertices.getZ(minZ),
-                    biggestDist = Math.max(xDist, yDist, zDist);
+                    biggestDist = Math.max(xDist, yDist, zDist),
+                    radius = biggestDist/2;
                 
-                let radius = biggestDist/2;
                 // AveragePos = bounding spheres center
                 averagePos.divideScalar(indexArray.length);
             
                 // Loop through again to find non-included vertices
-                for (let i = 0; i < indexList.length; i++) {
+                for (let j = 0; j < indexList.length; j++) {
                     
-                    let planeVertX = planeVertices.getX(indexList[i]),
-                        planeVertY = planeVertices.getY(indexList[i]),
-                        planeVertZ = planeVertices.getZ(indexList[i]),
+                    let planeVertX = planeVertices.getX(indexList[j]),
+                        planeVertY = planeVertices.getY(indexList[j]),
+                        planeVertZ = planeVertices.getZ(indexList[j]),
                         distPointToSphereSquared = (planeVertX-averagePos.x)*(planeVertX-averagePos.x) + 
                                                    (planeVertY-averagePos.y)*(planeVertY-averagePos.y) + 
                                                    (planeVertZ-averagePos.z)*(planeVertZ-averagePos.z);
@@ -160,8 +160,10 @@
             
             /*******************************************************/
             
-            /************************** self-collisions recursive function *******************************/
             
+            
+            /************************** Recursive self-collisions function *******************************/
+            // uses WIDTHSEGMENTS and planeVertices
             let checkSelfCollision = (vertexIndex, vertexRadius, subGroup) => {
             
                 // Generate subgroups bounding-sphere
@@ -187,7 +189,7 @@
                         console.log("collision happening between: " + vertexIndex + " and " + subGroup.vertices[0]);
                     }
                     else {
-                        // Go down one level in tree and check again
+                        // Go down one level in subtree and check again
                         checkSelfCollision(vertexIndex, vertexRadius, subGroup.firstQuadrant);
                         checkSelfCollision(vertexIndex, vertexRadius, subGroup.secondQuadrant);
                         checkSelfCollision(vertexIndex, vertexRadius, subGroup.thirdQuadrant);
@@ -214,6 +216,11 @@
                 // Check self-collisions
                 for (let i = 0; i < indexArray.length; i++)
                 {
+                    // Beräkna längsta avstånd mellan vertexarna
+                    // Skapa boundingsphere utifrån den
+                    // Halvera radien för varje subgrupps nivå/djup istället för att helt beräkna ny
+                    
+                    
                     //computeBoundingSphere(indexArray, 0.5);
                     checkSelfCollision(i, 0.1, root.firstQuadrant);
                     checkSelfCollision(i, 0.1, root.secondQuadrant);
